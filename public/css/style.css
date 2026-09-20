@@ -1,0 +1,158 @@
+* { box-sizing: border-box; }
+body { font-family: system-ui, -apple-system, sans-serif; margin: 0; background: #f5f6fa; color: #222; }
+header { display: flex; justify-content: space-between; align-items: center; padding: 16px 24px; background: #2c3e50; color: white; }
+header button { background: #e74c3c; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; }
+.card { background: white; margin: 20px auto; padding: 20px; max-width: 900px; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,.1); }
+.auth-card { max-width: 360px; text-align: center; margin-top: 60px; }
+.auth-card input, .auth-card button { width: 100%; padding: 10px; margin: 6px 0; box-sizing: border-box; }
+.hidden { display: none !important; }
+.row { margin: 10px 0; display: flex; flex-direction: column; gap: 4px; }
+select, input, textarea { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; font-family: inherit; }
+textarea { min-height: 60px; width: 100%; }
+button { cursor: pointer; padding: 8px 14px; border-radius: 4px; border: 1px solid #ccc; background: #3498db; color: white; }
+button:hover { opacity: .9; }
+.error { color: #e74c3c; min-height: 20px; }
+.tabs { display: flex; gap: 8px; padding: 16px 24px 0; max-width: 900px; margin: 0 auto; }
+.tab-btn { background: #eee; color: #333; }
+.tab-btn.active { background: #2c3e50; color: white; }
+table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+th, td { text-align: left; padding: 8px; border-bottom: 1px solid #eee; vertical-align: top; }
+form label { font-weight: 600; margin-top: 8px; display: block; }
+.option-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 10px 0; }
+.option-grid > div { display: flex; flex-direction: column; gap: 4px; }
+.checkbox-label { display: inline-block; margin-right: 12px; font-weight: normal; }
+.question-text { font-size: 18px; margin: 16px 0; white-space: pre-wrap; }
+.option-btn { display: block; width: 100%; text-align: left; margin: 6px 0; background: #ecf0f1; color: #222; border: 1px solid #ccc; white-space: pre-wrap; }
+.option-btn.selected { border-color: #3498db; border-width: 2px; }
+.option-btn.correct { background: #2ecc71; color: white; }
+.option-btn.incorrect { background: #e74c3c; color: white; }
+.nav-row { display: flex; gap: 10px; margin-top: 16px; }
+.attachment-img { max-width: 100%; border-radius: 4px; margin-top: 8px; }
+#explanationBox, #attachmentBox { margin-top: 16px; padding: 12px; background: #f9f9f9; border-radius: 4px; white-space: pre-wrap; }
+form > button { margin-top: 12px; }
+
+/* Collapsible "Quiz Setup" section */
+.collapsible-header { display: flex; justify-content: space-between; align-items: center; }
+.collapsible-header h3 { margin: 0; }
+.toggle-btn { background: #eee; color: #333; border: 1px solid #ccc; font-size: 13px; padding: 6px 10px; }
+
+/* Top-right question counter badge on the quiz card */
+#quiz { position: relative; padding-top: 40px; }
+#progressBadge { position: absolute; top: 16px; right: 20px; font-weight: 600; color: #555; background: #ecf0f1; padding: 4px 10px; border-radius: 12px; font-size: 14px; }
+
+/* Hint button */
+.hint-btn { background: #f1c40f; color: #4a3b00; border: 1px solid #d4ac0d; margin: 10px 0; font-weight: 600; }
+.hint-btn:hover { background: #f39c12; }
+
+/* Suggest-a-correction box */
+#suggestBox { margin-top: 20px; }
+.link-btn { background: none; border: none; color: #3498db; padding: 4px 0; text-decoration: underline; font-size: 13px; }
+.secondary-btn { background: #bbb; }
+.success-msg { color: #2ecc71; font-size: 13px; margin-top: 6px; }
+#suggestForm textarea { width: 100%; min-height: 60px; margin-top: 6px; }
+
+/* Suggestions admin tab */
+.status-pending { color: #e67e22; font-weight: 600; }
+.status-reviewed { color: #3498db; font-weight: 600; }
+.status-resolved { color: #2ecc71; font-weight: 600; }
+
+/* Generic tab-content sections on the user side (index.html) */
+.tab-content { max-width: 1100px; margin: 0 auto; padding: 0 20px; }
+.tab-content > .card { max-width: 900px; }
+
+/* ---------- Take a Test ---------- */
+.test-layout { display: flex; gap: 20px; align-items: flex-start; max-width: 1100px; margin: 20px auto; padding: 0 20px; }
+.test-main { flex: 1; min-width: 0; }
+.test-nav { width: 260px; flex-shrink: 0; }
+.test-header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.test-timer { font-size: 20px; font-weight: 700; color: #e74c3c; background: #fdecea; padding: 6px 14px; border-radius: 6px; }
+.submit-test-btn { background: #e74c3c; margin-top: 16px; width: 100%; }
+.test-nav-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin: 12px 0; }
+.nav-cell { width: 36px; height: 36px; padding: 0; background: #ecf0f1; color: #333; border: 2px solid #ccc; border-radius: 4px; font-weight: 600; }
+.nav-cell.nav-answered { background: #2ecc71; color: white; border-color: #27ae60; }
+.nav-cell.nav-skipped { background: #f1c40f; color: #4a3b00; border-color: #d4ac0d; }
+.nav-cell.nav-current { border-color: #3498db; border-width: 3px; }
+.legend { display: flex; flex-direction: column; gap: 6px; font-size: 12px; margin-top: 10px; }
+.legend .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; }
+.dot-answered { background: #2ecc71; }
+.dot-skipped { background: #f1c40f; }
+.dot-unvisited { background: #ecf0f1; border: 1px solid #ccc; }
+.review-item { border-bottom: 1px solid #eee; padding: 10px 0; }
+.answer-correct { color: #2ecc71; }
+.answer-wrong { color: #e74c3c; }
+.review-explanation { color: #555; font-style: italic; white-space: pre-wrap; }
+
+/* Users admin tab */
+.badge-blocked { color: #e74c3c; font-weight: 600; }
+.badge-active { color: #2ecc71; font-weight: 600; }
+.pagination { display: flex; gap: 8px; align-items: center; margin-top: 14px; }
+
+/* Reset-password modal */
+.modal { position: fixed; inset: 0; background: rgba(0,0,0,.4); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 16px; }
+.modal-box { background: white; padding: 20px; border-radius: 8px; width: 320px; max-width: 100%; max-height: 90vh; overflow-y: auto; }
+.modal-box input { width: 100%; margin: 10px 0; }
+#resetPasswordResult { background: #eafaf1; border: 1px solid #2ecc71; padding: 10px; border-radius: 6px; margin: 10px 0; font-size: 14px; }
+
+/* Header profile icon + Contact Us */
+.header-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
+.profile-icon-btn { background: #34495e; border-radius: 50%; width: 36px; height: 36px; padding: 0; font-size: 16px; display: inline-flex; align-items: center; justify-content: center; }
+
+/* Import/export controls */
+.import-export-row { flex-direction: row; flex-wrap: wrap; gap: 10px; align-items: center; }
+.filters-row { flex-direction: row; flex-wrap: wrap; gap: 10px; align-items: center; }
+.filters-row select, .filters-row input { flex: 1 1 200px; }
+.import-file-label { background: #2ecc71; color: white; padding: 8px 14px; border-radius: 4px; cursor: pointer; font-size: 14px; display: inline-flex; align-items: center; }
+#importResultMsg { font-size: 13px; background: #f4f6f7; border-radius: 4px; padding: 8px; margin-top: 8px; }
+
+/* Tables that might overflow narrow screens scroll horizontally instead of squeezing content */
+.table-scroll { width: 100%; overflow-x: auto; }
+
+/* ======================================================================
+   MOBILE (phones, and the Android/iOS app webviews wrapping this site)
+   ====================================================================== */
+@media (max-width: 640px) {
+  header { padding: 12px 14px; flex-wrap: wrap; gap: 8px; }
+  header h1 { font-size: 18px; }
+  .header-right { width: 100%; justify-content: space-between; }
+
+  .tabs { padding: 10px 10px 0; gap: 6px; overflow-x: auto; -webkit-overflow-scrolling: touch; flex-wrap: nowrap; }
+  .tab-btn { flex-shrink: 0; font-size: 13px; padding: 8px 10px; }
+
+  .tab-content { padding: 0 10px; }
+  .card, .tab-content > .card { margin: 12px auto; padding: 14px; border-radius: 6px; max-width: 100%; }
+  .auth-card { margin-top: 24px; }
+
+  .option-grid { grid-template-columns: 1fr; }
+  .nav-row { flex-wrap: wrap; }
+  .nav-row button { flex: 1 1 auto; min-width: 100px; }
+
+  table { font-size: 13px; }
+  th, td { padding: 6px; }
+  #paperTable, #bookTable, #chapterTable, #questionTable, #suggestionTable,
+  #userTable, #materialTable, #materialsTable, #mySuggestionsTable {
+    display: block;
+  }
+  #paperTable, #bookTable, #chapterTable, #questionTable, #suggestionTable,
+  #userTable, #materialTable, #materialsTable, #mySuggestionsTable {
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+
+  .import-export-row { flex-direction: column; align-items: stretch; }
+  .import-export-row button, .import-file-label { width: 100%; justify-content: center; text-align: center; }
+  .filters-row { flex-direction: column; align-items: stretch; }
+
+  /* Take a Test: nav panel drops below the question instead of sitting beside it */
+  .test-layout { flex-direction: column; padding: 0 10px; }
+  .test-nav { width: 100%; }
+  .test-nav-grid { grid-template-columns: repeat(6, 1fr); }
+  .nav-cell { width: 100%; height: 40px; }
+  .test-header-row { flex-wrap: wrap; gap: 8px; }
+  .test-timer { font-size: 16px; }
+
+  .modal-box { width: 100%; }
+
+  #progressBadge { font-size: 12px; padding: 3px 8px; }
+  .question-text { font-size: 16px; }
+}
+

@@ -1,0 +1,119 @@
+// Prisma schema. Using SQLite now for zero-setup local development.
+// To move to Postgres later: change `provider = "sqlite"` to `provider = "postgresql"`,
+// set DATABASE_URL in .env to your Postgres connection string, then run
+// `npx prisma migrate dev` again. The rest of the app code does not need to change.
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            Int      @id @default(autoincrement())
+  name          String
+  username      String   @unique
+  mobile        String?
+  email         String   @unique // mandatory - used for forgot-username/password recovery
+  password      String   // NOTE: temporary/reset passwords only, see auth routes. Not the user's original password.
+  role          String   @default("user") // "user" | "admin" | "master_admin"
+  status        String   @default("active") // "active" | "blocked"
+  createdAt     DateTime @default(now())
+
+  questions     Question[]           @relation("QuestionCreatedBy")
+  suggestions   QuestionSuggestion[]
+  examMaterials ExamMaterial[]
+  testAttempts  TestAttempt[]
+}
+
+model Paper {
+  id            Int           @id @default(autoincrement())
+  name          String        @unique
+  books         PaperBook[]
+  examMaterials ExamMaterial[]
+}
+
+model Book {
+  id       Int         @id @default(autoincrement())
+  name     String
+  papers   PaperBook[]
+  chapters Chapter[]
+}
+
+model PaperBook {
+  paperId Int
+  bookId  Int
+  paper   Paper @relation(fields: [paperId], references: [id], onDelete: Cascade)
+  book    Book  @relation(fields: [bookId], references: [id], onDelete: Cascade)
+
+  @@id([paperId, bookId])
+}
+
+model Chapter {
+  id        Int        @id @default(autoincrement())
+  name      String
+  bookId    Int
+  book      Book       @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  questions Question[]
+}
+
+model Question {
+  id             Int      @id @default(autoincrement())
+  chapterId      Int
+  chapter        Chapter  @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  questionText   String   // "English//Gujarati" or single-language
+  option1        String
+  option2        String
+  option3        String
+  option4        String
+  correctOption  Int
+  explanation    String?
+  attachmentPath String?
+  attachmentType String?  // "image" | "pdf"
+  createdById    Int
+  createdBy      User     @relation("QuestionCreatedBy", fields: [createdById], references: [id])
+  createdAt      DateTime @default(now())
+
+  suggestions    QuestionSuggestion[]
+}
+
+model QuestionSuggestion {
+  id             Int      @id @default(autoincrement())
+  questionId     Int
+  question       Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  userId         Int
+  user           User     @relation(fields: [userId], references: [id])
+  suggestionText String
+  status         String   @default("pending") // "pending" | "reviewed" | "resolved"
+  adminNote      String?
+  createdAt      DateTime @default(now())
+}
+
+// A row in the "Exam Material Download" table users can browse (paper/book reference PDFs etc.)
+model ExamMaterial {
+  id           Int      @id @default(autoincrement())
+  paperId      Int?
+  paper        Paper?   @relation(fields: [paperId], references: [id])
+  materialName String   // book/material name shown in the table
+  downloadLink String
+  keywords     String?  // free-text hashtags/keywords, e.g. "#algebra #geometry maths" - used for search
+  addedById    Int
+  addedBy      User     @relation(fields: [addedById], references: [id])
+  createdAt    DateTime @default(now())
+}
+
+// A completed "Take a Test" run, so a user can see their past results.
+// Scoring happens server-side here (not trusted from the client) when the test is submitted.
+model TestAttempt {
+  id              Int      @id @default(autoincrement())
+  userId          Int
+  user            User     @relation(fields: [userId], references: [id])
+  totalQuestions  Int
+  attempted       Int      // answered, whether right or wrong (excludes skipped/unvisited)
+  correctCount    Int
+  durationSeconds Int      // how long the test took, from start to submit
+  answersJson     String   // JSON: [{questionId, chosenOption, correctOption, isCorrect}], used for the review screen
+  createdAt       DateTime @default(now())
+}

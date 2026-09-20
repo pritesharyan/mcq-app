@@ -1,0 +1,229 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <title>Higher Grade Pay - ITI</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <header>
+    <h1>Higher Grade Pay - ITI</h1>
+    <div class="header-right">
+      <span id="who"></span>
+      <button type="button" id="profileIconBtn" class="profile-icon-btn" title="My Profile">👤</button>
+      <button id="logoutBtn">Logout</button>
+    </div>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab-btn active" data-tab="practice">Practice MCQ</button>
+    <button class="tab-btn" data-tab="test">Take a Test</button>
+    <button class="tab-btn" data-tab="testhistory">My Test Results</button>
+    <button class="tab-btn" data-tab="materials">Exam Materials</button>
+    <button class="tab-btn" data-tab="mysuggestions">My Suggestions</button>
+    <button class="tab-btn" data-tab="account">Change Password</button>
+    <button class="tab-btn" data-tab="contact">Contact Us</button>
+  </nav>
+
+  <!-- ===================== PRACTICE QUIZ ===================== -->
+  <section id="tab-practice" class="tab-content">
+    <section id="selectors" class="card">
+      <div class="collapsible-header" id="selectorsHeader">
+        <h3>Quiz Setup</h3>
+        <button type="button" id="selectorsToggle" class="toggle-btn">Hide ▲</button>
+      </div>
+      <div id="selectorsBody">
+        <div class="row"><label>Paper</label><select id="paperSelect"><option value="">-- All --</option></select></div>
+        <div class="row"><label>Book</label><select id="bookSelect"><option value="">-- All --</option></select></div>
+        <div class="row"><label>Chapter</label><select id="chapterSelect"><option value="">-- All --</option></select></div>
+        <div class="row">
+          <label>Language</label>
+          <select id="langSelect">
+            <option value="both">Both</option>
+            <option value="en">English</option>
+            <option value="gu">Gujarati</option>
+          </select>
+        </div>
+        <button id="startBtn">Start Quiz</button>
+      </div>
+    </section>
+
+    <section id="quiz" class="card hidden">
+      <div id="progressBadge"></div>
+      <div id="qText" class="question-text"></div>
+      <div id="options"></div>
+      <button type="button" id="hintBtn" class="hint-btn">💡 Hint</button>
+      <div id="attachmentBox" class="hidden"><h4>Reference</h4><div id="attachmentContent"></div></div>
+      <div id="explanationBox" class="hidden"><h4>Explanation</h4><div id="explanationText"></div></div>
+
+      <div id="suggestBox">
+        <button type="button" id="suggestToggleBtn" class="link-btn">Suggest a correction/improvement for this question</button>
+        <div id="suggestForm" class="hidden">
+          <textarea id="suggestText" placeholder="What should be corrected or updated?"></textarea>
+          <div class="nav-row">
+            <button type="button" id="suggestSubmitBtn">Send to admin</button>
+            <button type="button" id="suggestCancelBtn" class="secondary-btn">Cancel</button>
+          </div>
+          <p id="suggestMsg" class="success-msg hidden">Thanks — your suggestion was sent to the admin.</p>
+        </div>
+      </div>
+
+      <div class="nav-row">
+        <button id="prevBtn">Previous</button>
+        <button id="submitAnswerBtn">Check Answer</button>
+        <button id="nextBtn">Next</button>
+      </div>
+    </section>
+  </section>
+
+  <!-- ===================== TAKE A TEST ===================== -->
+  <section id="tab-test" class="tab-content hidden">
+    <section id="testSetup" class="card">
+      <h3>Take a Test</h3>
+      <div class="row">
+        <label>Select one or more books</label>
+        <div id="testBookCheckboxes"></div>
+      </div>
+      <div class="row">
+        <label>Language</label>
+        <select id="testLangSelect">
+          <option value="both">Both</option>
+          <option value="en">English</option>
+          <option value="gu">Gujarati</option>
+        </select>
+      </div>
+      <div class="row"><label>Number of questions</label><input type="number" id="testCount" value="25" min="1"></div>
+      <div class="row"><label>Time limit (minutes)</label><input type="number" id="testMinutes" value="50" min="1"></div>
+      <button id="testStartBtn">Start Test</button>
+    </section>
+
+    <section id="testRunner" class="hidden">
+      <div class="test-layout">
+        <div class="card test-main">
+          <div class="test-header-row">
+            <div id="testTimer" class="test-timer">50:00</div>
+            <div id="testProgressBadge"></div>
+          </div>
+          <div id="testQText" class="question-text"></div>
+          <div id="testOptions"></div>
+          <div class="nav-row">
+            <button id="testPrevBtn">Previous</button>
+            <button id="testSkipBtn" class="secondary-btn">Skip</button>
+            <button id="testNextBtn">Next</button>
+          </div>
+          <button id="testSubmitBtn" class="submit-test-btn">Submit Test</button>
+        </div>
+        <div class="card test-nav">
+          <h4>Questions</h4>
+          <div id="testNavGrid" class="test-nav-grid"></div>
+          <div class="legend">
+            <span><i class="dot dot-answered"></i> Attempted</span>
+            <span><i class="dot dot-skipped"></i> Skipped</span>
+            <span><i class="dot dot-unvisited"></i> Not visited</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="testResults" class="card hidden">
+      <h3>Test Result</h3>
+      <div id="testResultSummary"></div>
+      <button id="testReviewBtn">Review Answers</button>
+      <button id="testRetakeBtn" class="secondary-btn">Take Another Test</button>
+      <div id="testReviewList"></div>
+    </section>
+  </section>
+
+  <!-- ===================== EXAM MATERIALS ===================== -->
+  <section id="tab-materials" class="tab-content hidden card">
+    <h3>Exam Materials</h3>
+    <div class="row filters-row">
+      <select id="materialsFilterPaper"><option value="">-- Filter by Paper --</option></select>
+      <input type="text" id="materialsSearchInput" placeholder="Search by Book/Material name or keyword...">
+    </div>
+    <table id="materialsTable">
+      <thead><tr><th>Sr. No</th><th>Paper Name</th><th>Book / Material Name</th><th>Keywords</th><th>Download</th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <div class="pagination">
+      <button id="materialsPrevPage">&laquo; Prev</button>
+      <span id="materialsPageInfo"></span>
+      <button id="materialsNextPage">Next &raquo;</button>
+    </div>
+  </section>
+
+  <!-- ===================== MY SUGGESTIONS ===================== -->
+  <section id="tab-mysuggestions" class="tab-content hidden card">
+    <h3>My Suggestions</h3>
+    <table id="mySuggestionsTable">
+      <thead><tr><th>Question</th><th>Chapter</th><th>My suggestion</th><th>Status</th><th>Admin note</th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <div class="pagination">
+      <button id="mySuggestionsPrevPage">&laquo; Prev</button>
+      <span id="mySuggestionsPageInfo"></span>
+      <button id="mySuggestionsNextPage">Next &raquo;</button>
+    </div>
+  </section>
+
+  <!-- ===================== MY TEST RESULTS ===================== -->
+  <section id="tab-testhistory" class="tab-content hidden card">
+    <h3>My Test Results</h3>
+    <table id="testHistoryTable">
+      <thead><tr><th>Date</th><th>Score</th><th>Attempted</th><th>Duration</th><th>Actions</th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <div class="pagination">
+      <button id="testHistoryPrevPage">&laquo; Prev</button>
+      <span id="testHistoryPageInfo"></span>
+      <button id="testHistoryNextPage">Next &raquo;</button>
+    </div>
+    <div id="testHistoryReview" class="hidden"></div>
+  </section>
+
+  <!-- ===================== CHANGE PASSWORD ===================== -->
+  <section id="tab-account" class="tab-content hidden card">
+    <h3>Change Password</h3>
+    <form id="changePasswordForm">
+      <label>Current password</label>
+      <input type="password" id="currentPassword" required>
+      <label>New password (min 6 characters)</label>
+      <input type="password" id="newPassword" required>
+      <label>Confirm new password</label>
+      <input type="password" id="confirmNewPassword" required>
+      <button type="submit">Update Password</button>
+    </form>
+    <p id="pwMsg" class="error"></p>
+  </section>
+
+  <!-- ===================== CONTACT US ===================== -->
+  <section id="tab-contact" class="tab-content hidden card">
+    <h3>Contact Us</h3>
+    <p>Have a question, a technical issue, or feedback for the admin team?</p>
+    <p>Email us at <a href="mailto:goodintentltd@gmail.com">goodintentltd@gmail.com</a> and we'll get back to you.</p>
+  </section>
+
+  <!-- ===================== PROFILE MODAL ===================== -->
+  <div id="profileModal" class="modal hidden">
+    <div class="modal-box">
+      <h4>My Profile</h4>
+      <label>Name</label>
+      <input type="text" id="profileName">
+      <label>Username</label>
+      <input type="text" id="profileUsername" disabled>
+      <label>Mobile</label>
+      <input type="text" id="profileMobile">
+      <label>Email</label>
+      <input type="email" id="profileEmail">
+      <p id="profileMsg" class="error"></p>
+      <div class="nav-row">
+        <button id="profileSaveBtn">Save</button>
+        <button id="profileCancelBtn" class="secondary-btn">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/app.js"></script>
+</body>
+</html>

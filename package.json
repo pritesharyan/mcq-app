@@ -1,0 +1,25 @@
+{
+  "name": "mcq-app",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Multi-user MCQ practice app with roles, timed tests, and Prisma (SQLite now, Postgres-ready later).",
+  "scripts": {
+    "start": "node server.js",
+    "postinstall": "prisma generate",
+    "migrate": "prisma migrate dev --name init",
+    "studio": "prisma studio",
+    "sample-data": "node prisma/generate-sample-questions.js"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.20.0",
+    "bcryptjs": "^2.4.3",
+    "express": "^4.19.2",
+    "express-session": "^1.18.0",
+    "multer": "^1.4.5-lts.1",
+    "nodemailer": "^6.9.15",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "prisma": "^5.20.0"
+  }
+}

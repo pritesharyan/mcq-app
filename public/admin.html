@@ -1,0 +1,224 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <title>MCQ Admin</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <header>
+    <h1>Admin Panel</h1>
+    <div class="header-right"><span id="who"></span> <button id="logoutBtn">Logout</button></div>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab-btn active" data-tab="papers">Papers</button>
+    <button class="tab-btn" data-tab="books">Books</button>
+    <button class="tab-btn" data-tab="chapters">Chapters</button>
+    <button class="tab-btn" data-tab="questions">Questions</button>
+    <button class="tab-btn" data-tab="suggestions">Suggestions <span id="suggestionCountBadge"></span></button>
+    <button class="tab-btn" data-tab="users">Users</button>
+    <button class="tab-btn" data-tab="materials">Exam Materials</button>
+  </nav>
+
+  <section id="tab-papers" class="tab-content card">
+    <h3>Papers</h3>
+    <form id="paperForm">
+      <input type="hidden" id="paperId">
+      <label>Paper name</label>
+      <input type="text" id="paperName" required>
+      <button type="submit">Save</button>
+    </form>
+    <table id="paperTable"><thead><tr><th>Name</th><th>Actions</th></tr></thead><tbody></tbody></table>
+  </section>
+
+  <section id="tab-books" class="tab-content card hidden">
+    <h3>Books</h3>
+    <form id="bookForm">
+      <input type="hidden" id="bookId">
+      <label>Book name</label>
+      <input type="text" id="bookName" required>
+      <label>Papers this book belongs to</label>
+      <div id="bookPaperCheckboxes"></div>
+      <button type="submit">Save</button>
+    </form>
+    <table id="bookTable"><thead><tr><th>Name</th><th>Papers</th><th>Actions</th></tr></thead><tbody></tbody></table>
+  </section>
+
+  <section id="tab-chapters" class="tab-content card hidden">
+    <h3>Chapters</h3>
+    <form id="chapterForm">
+      <input type="hidden" id="chapterId">
+      <label>Chapter name</label>
+      <input type="text" id="chapterName" required>
+      <label>Book</label>
+      <select id="chapterBookSelect" required></select>
+      <button type="submit">Save</button>
+    </form>
+    <table id="chapterTable"><thead><tr><th>Name</th><th>Book</th><th>Actions</th></tr></thead><tbody></tbody></table>
+  </section>
+
+  <section id="tab-questions" class="tab-content card hidden">
+    <h3>Questions</h3>
+    <p id="questionsScopeNote" style="font-size:13px;color:#888"></p>
+
+    <div class="row import-export-row">
+      <button type="button" id="exportQuestionsBtn">⬇ Export to Excel</button>
+      <button type="button" id="downloadTemplateBtn" class="secondary-btn">Download import template</button>
+      <label class="import-file-label">
+        ⬆ Import from Excel
+        <input type="file" id="importFileInput" accept=".xlsx,.xls" class="hidden">
+      </label>
+    </div>
+    <p id="importResultMsg" class="hidden"></p>
+
+    <form id="questionForm" enctype="multipart/form-data">
+      <input type="hidden" id="questionId">
+      <label>Chapter</label>
+      <select id="questionChapterSelect" required></select>
+
+      <label>Question (English)</label>
+      <textarea id="question_en"></textarea>
+      <label>Question (Gujarati)</label>
+      <textarea id="question_gu"></textarea>
+      <p style="font-size:12px;color:#888">Leave one blank to save a single-language question. At least one is required.</p>
+
+      <div class="option-grid">
+        <div><label>Option 1 - English</label><input id="opt1_en"><label>Option 1 - Gujarati</label><input id="opt1_gu"></div>
+        <div><label>Option 2 - English</label><input id="opt2_en"><label>Option 2 - Gujarati</label><input id="opt2_gu"></div>
+        <div><label>Option 3 - English</label><input id="opt3_en"><label>Option 3 - Gujarati</label><input id="opt3_gu"></div>
+        <div><label>Option 4 - English</label><input id="opt4_en"><label>Option 4 - Gujarati</label><input id="opt4_gu"></div>
+      </div>
+
+      <label>Correct option</label>
+      <select id="correct_option">
+        <option value="1">Option 1</option><option value="2">Option 2</option>
+        <option value="3">Option 3</option><option value="4">Option 4</option>
+      </select>
+
+      <label>Explanation (English)</label>
+      <textarea id="explanation_en"></textarea>
+      <label>Explanation (Gujarati)</label>
+      <textarea id="explanation_gu"></textarea>
+
+      <label>Attachment (image or PDF reference / solution)</label>
+      <input type="file" id="attachment" accept="image/*,application/pdf">
+      <div id="currentAttachment"></div>
+
+      <button type="submit">Save Question</button>
+    </form>
+
+    <div class="row">
+      <label>Filter by chapter</label>
+      <select id="questionFilterChapter"><option value="">-- All --</option></select>
+    </div>
+    <table id="questionTable"><thead><tr><th>Question</th><th>Chapter</th><th>Actions</th></tr></thead><tbody></tbody></table>
+    <div class="pagination">
+      <button id="questionsPrevPage">&laquo; Prev</button>
+      <span id="questionsPageInfo"></span>
+      <button id="questionsNextPage">Next &raquo;</button>
+    </div>
+  </section>
+
+  <section id="tab-suggestions" class="tab-content card hidden">
+    <h3>User-submitted corrections</h3>
+    <div class="row">
+      <label>Filter by status</label>
+      <select id="suggestionFilterStatus">
+        <option value="">-- All --</option>
+        <option value="pending">Pending</option>
+        <option value="reviewed">Reviewed</option>
+        <option value="resolved">Resolved</option>
+      </select>
+    </div>
+    <table id="suggestionTable">
+      <thead><tr><th>Question</th><th>Chapter</th><th>From</th><th>Suggestion</th><th>Status</th><th>Actions</th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <div class="pagination">
+      <button id="suggestionsPrevPage">&laquo; Prev</button>
+      <span id="suggestionsPageInfo"></span>
+      <button id="suggestionsNextPage">Next &raquo;</button>
+    </div>
+  </section>
+
+  <section id="tab-users" class="tab-content card hidden">
+    <h3>Users</h3>
+
+    <form id="createUserForm">
+      <h4>Create a new user</h4>
+      <label>Name</label>
+      <input type="text" id="newUserName" required>
+      <label>Username</label>
+      <input type="text" id="newUserUsername" required>
+      <label>Mobile</label>
+      <input type="text" id="newUserMobile">
+      <label>Email</label>
+      <input type="email" id="newUserEmail" required>
+      <label>Role</label>
+      <select id="newUserRole">
+        <option value="user">user</option>
+        <option value="admin" id="newUserRoleAdminOption" class="hidden">admin</option>
+      </select>
+      <button type="submit">Create user</button>
+      <p id="createUserMsg" class="error"></p>
+      <div id="createUserResult" class="hidden"></div>
+    </form>
+
+    <table id="userTable">
+      <thead><tr><th>Name</th><th>Username</th><th>Mobile</th><th>Email</th><th>Role</th><th>Status</th><th>Actions</th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <div class="pagination">
+      <button id="usersPrevPage">&laquo; Prev</button>
+      <span id="usersPageInfo"></span>
+      <button id="usersNextPage">Next &raquo;</button>
+    </div>
+  </section>
+
+  <section id="tab-materials" class="tab-content card hidden">
+    <h3>Exam Materials</h3>
+    <form id="materialForm">
+      <input type="hidden" id="materialId">
+      <label>Paper (optional)</label>
+      <select id="materialPaperSelect"><option value="">-- None --</option></select>
+      <label>Book / material name</label>
+      <input type="text" id="materialName" required>
+      <label>Keywords / hashtags (comma-separated, used for search — e.g. "algebra, geometry, unit 3")</label>
+      <input type="text" id="materialKeywords" placeholder="#algebra, #geometry">
+      <label>Download link (URL)</label>
+      <input type="text" id="materialUrl" placeholder="https://..." required>
+      <button type="submit">Save</button>
+    </form>
+
+    <div class="row">
+      <input type="text" id="materialsAdminSearchInput" placeholder="Search by paper, material name, or keyword...">
+    </div>
+    <table id="materialTable">
+      <thead><tr><th>Sr. No</th><th>Paper</th><th>Material</th><th>Keywords</th><th>Link</th><th>Actions</th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <div class="pagination">
+      <button id="materialsAdminPrevPage">&laquo; Prev</button>
+      <span id="materialsAdminPageInfo"></span>
+      <button id="materialsAdminNextPage">Next &raquo;</button>
+    </div>
+  </section>
+
+  <!-- Reset-password mini dialog, reused from the Users tab -->
+  <div id="resetPasswordModal" class="modal hidden">
+    <div class="modal-box">
+      <h4>Reset password for <span id="resetPasswordUsername"></span></h4>
+      <p style="font-size:13px;color:#666">This generates a new random password for the user. It's shown once here — copy it and share it with them directly.</p>
+      <div id="resetPasswordResult" class="hidden"></div>
+      <div class="nav-row">
+        <button id="resetPasswordConfirm">Generate new password</button>
+        <button id="resetPasswordCancel" class="secondary-btn">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/admin.js"></script>
+</body>
+</html>

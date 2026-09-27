@@ -6,8 +6,8 @@ const databaseUrl = process.env.DATABASE_URL || '';
 if (databaseUrl.startsWith('file:')) {
   const queryIndex = databaseUrl.indexOf('?');
   const urlPath = databaseUrl.slice(5, queryIndex === -1 ? undefined : queryIndex);
-  const projectPath = path.resolve(__dirname, decodeURIComponent(urlPath));
-  if (!path.isAbsolute(urlPath) && fs.existsSync(projectPath)) {
+  if (!path.isAbsolute(urlPath)) {
+    const projectPath = path.resolve(__dirname, decodeURIComponent(urlPath));
     const schemaRelativePath = path.relative(path.join(__dirname, 'prisma'), projectPath).replace(/\\/g, '/');
     const query = queryIndex === -1 ? '' : databaseUrl.slice(queryIndex);
     process.env.DATABASE_URL = `file:./${schemaRelativePath}${query}`;
@@ -21,6 +21,13 @@ const prisma = require('./lib/prisma');
 const { startDailyBackups } = require('./lib/backups');
 
 const app = express();
+const isProduction = process.env.NODE_ENV === 'production';
+
+if (isProduction && !process.env.SESSION_SECRET) {
+  throw new Error('SESSION_SECRET must be set in production');
+}
+
+app.set('trust proxy', 1);
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -28,14 +35,19 @@ app.use(session({
   secret: process.env.SESSION_SECRET || 'dev-secret-change-me',
   resave: false,
   saveUninitialized: false,
-  cookie: { maxAge: 1000 * 60 * 60 * 8 } // 8 hours
+  cookie: { maxAge: 1000 * 60 * 60 * 8, httpOnly: true, sameSite: 'lax', secure: isProduction } // 8 hours
 }));
+
+app.get('/healthz', (req, res) => {
+  res.json({ ok: true });
+});
 
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'landing.html'));
 });
 
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+const uploadsDir = process.env.UPLOADS_DIR || path.join(__dirname, 'uploads');
+app.use('/uploads', express.static(uploadsDir));
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/api/auth', require('./routes/auth'));

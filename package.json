@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node server.js",
     "postinstall": "prisma generate",
+    "migrate:deploy": "prisma migrate deploy",
     "migrate": "prisma migrate dev --name init",
     "studio": "prisma studio",
     "sample-data": "node prisma/generate-sample-questions.js"

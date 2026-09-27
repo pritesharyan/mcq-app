@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: higher-grade-pay-iti
+    runtime: node
+    plan: starter
+    buildCommand: npm ci && npm run migrate:deploy
+    startCommand: npm start
+    healthCheckPath: /healthz
+    disk:
+      name: app-data
+      mountPath: /opt/render/project/src/storage
+      sizeGB: 1
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: INITIAL_ADMIN_PASSWORD
+        generateValue: true
+      - key: DATABASE_URL
+        value: file:/opt/render/project/src/storage/data.db
+      - key: UPLOADS_DIR
+        value: /opt/render/project/src/storage/uploads
+      - key: BACKUP_DIR
+        value: /opt/render/project/src/storage/backups

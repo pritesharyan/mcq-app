@@ -34,11 +34,36 @@ Open `http://localhost:3000`.
   database) that creates `data.db` and all its tables from
   `prisma/schema.prisma`. Run it again with a new `--name` any time you edit
   the schema yourself later.
-- **Default master admin:** `admin` / `admin123` — seeded automatically the
-  very first time the server starts against an empty database (see
-  `lib/seed.js`). Change this password immediately via Admin > Users > Reset
-  password, or the Change Password screen on the user side.
+- **Initial master admin:** username `admin`, with the password from
+  `INITIAL_ADMIN_PASSWORD` — seeded only the very first time the server starts
+  against an empty database. Production requires this variable and a password
+  of at least 12 characters; local development uses `admin123` only when the
+  variable is omitted. Change the initial password immediately after signing
+  in via the Change Password screen.
 - Anyone can **Register** — new accounts default to role `user`.
+
+## Deploy to Render
+
+This repository includes `render.yaml` for a single-instance Render web service
+using a persistent disk for the SQLite database, uploads, and backups.
+
+1. Push the repository to GitHub and create a Render Blueprint from it.
+2. Review the generated `SESSION_SECRET`; Render generates it automatically.
+3. Add SMTP environment variables if account-recovery emails should be sent:
+  `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, and optionally `SMTP_FROM`.
+4. Deploy and confirm that `/healthz` returns `{ "ok": true }`.
+
+The persistent disk is required. Without it, SQLite data, uploaded materials,
+sessions, and backups can be lost when Render restarts or redeploys the service.
+For multiple web instances, migrate the database to Postgres and use durable
+object storage for uploaded files; the current in-process session store is for
+the single-instance deployment described above.
+
+For Google AdSense, publish the Privacy Policy, Terms of Use, and Contact pages
+before applying, keep substantial original educational content available to
+crawlers, and add the publisher-specific `ads.txt` entry only after Google
+provides the publisher ID. Approval is determined by Google and cannot be
+guaranteed by deployment configuration.
 
 ## Database backups
 

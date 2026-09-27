@@ -1,7 +1,24 @@
+const fs = require('fs');
+const path = require('path');
+const envFile = path.join(__dirname, '.env');
+if (process.loadEnvFile && fs.existsSync(envFile)) process.loadEnvFile(envFile);
+const databaseUrl = process.env.DATABASE_URL || '';
+if (databaseUrl.startsWith('file:')) {
+  const queryIndex = databaseUrl.indexOf('?');
+  const urlPath = databaseUrl.slice(5, queryIndex === -1 ? undefined : queryIndex);
+  const projectPath = path.resolve(__dirname, decodeURIComponent(urlPath));
+  if (!path.isAbsolute(urlPath) && fs.existsSync(projectPath)) {
+    const schemaRelativePath = path.relative(path.join(__dirname, 'prisma'), projectPath).replace(/\\/g, '/');
+    const query = queryIndex === -1 ? '' : databaseUrl.slice(queryIndex);
+    process.env.DATABASE_URL = `file:./${schemaRelativePath}${query}`;
+  }
+}
+
 const express = require('express');
 const session = require('express-session');
-const path = require('path');
 const { seedMasterAdmin } = require('./lib/seed');
+const prisma = require('./lib/prisma');
+const { startDailyBackups } = require('./lib/backups');
 
 const app = express();
 
@@ -13,6 +30,10 @@ app.use(session({
   saveUninitialized: false,
   cookie: { maxAge: 1000 * 60 * 60 * 8 } // 8 hours
 }));
+
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'landing.html'));
+});
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use(express.static(path.join(__dirname, 'public')));
@@ -26,6 +47,7 @@ app.use('/api/suggestions', require('./routes/suggestions'));
 app.use('/api/test', require('./routes/test'));
 app.use('/api/exam-materials', require('./routes/examMaterials'));
 app.use('/api/practice', require('./routes/practice'));
+app.use('/api/backups', require('./routes/backups'));
 
 // Generic error handler (e.g. multer file-type/size rejections, Prisma errors)
 app.use((err, req, res, next) => {
@@ -38,5 +60,8 @@ const PORT = process.env.PORT || 3000;
 seedMasterAdmin()
   .catch(err => console.error('Seed error:', err))
   .finally(() => {
-    app.listen(PORT, () => console.log(`MCQ app running at http://localhost:${PORT}`));
+    app.listen(PORT, () => {
+      console.log(`MCQ app running at http://localhost:${PORT}`);
+      startDailyBackups(prisma).catch(err => console.error('Backup scheduler error:', err));
+    });
   });

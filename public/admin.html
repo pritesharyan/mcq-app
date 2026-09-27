@@ -5,14 +5,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <title>MCQ Admin</title>
   <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/navigation.css">
+  <link rel="stylesheet" href="/css/backups.css">
 </head>
 <body>
-  <header>
+  <header class="app-header">
     <h1>Admin Panel</h1>
-    <div class="header-right"><span id="who"></span> <button id="logoutBtn">Logout</button></div>
+    <div class="header-right"><span id="who"></span><button type="button" id="menuToggle" class="menu-toggle" aria-controls="primaryNav" aria-expanded="false" aria-label="Open navigation" title="Open navigation"><span></span><span></span><span></span></button> <button id="logoutBtn">Logout</button></div>
   </header>
 
-  <nav class="tabs">
+  <nav class="tabs" id="primaryNav" aria-label="Main navigation">
     <button class="tab-btn active" data-tab="papers">Papers</button>
     <button class="tab-btn" data-tab="books">Books</button>
     <button class="tab-btn" data-tab="questions">Questions</button>
@@ -20,8 +22,10 @@
     <button class="tab-btn" data-tab="users">Users</button>
     <button class="tab-btn" data-tab="materials">Exam Materials</button>
     <button class="tab-btn" data-tab="engagement" id="engagementTabBtn">User Engagement</button>
+    <button class="tab-btn" data-tab="backups" id="backupsTabBtn">Backups</button>
     <button class="tab-btn" data-tab="changepassword">Change Password</button>
   </nav>
+  <button type="button" id="navBackdrop" class="nav-backdrop" aria-label="Close navigation"></button>
 
   <section id="tab-papers" class="tab-content card">
     <h3>Papers</h3>
@@ -198,7 +202,10 @@
   </section>
 
   <section id="tab-engagement" class="tab-content card hidden">
-    <h3>User Engagement</h3>
+    <div class="engagement-heading">
+      <h3>User Engagement</h3>
+      <button type="button" id="exportEngagementBtn">Download Excel</button>
+    </div>
     <p style="font-size:13px;color:#888">Time spent is calculated from each login until logout, or until their last activity if they never explicitly logged out (closing the tab doesn't log a user out immediately). "Online now" means they've been active in the last 5 minutes.</p>
     <table id="engagementTable">
       <thead><tr><th>Name</th><th>Username</th><th>Role</th><th>Sessions</th><th>Total Time</th><th>Last Login</th><th>Status</th><th>Actions</th></tr></thead>
@@ -222,6 +229,25 @@
         <button id="userSessionsNextPage">Next &raquo;</button>
       </div>
     </div>
+  </section>
+
+  <section id="tab-backups" class="tab-content card hidden">
+    <div class="backup-heading">
+      <div>
+        <h3>Database backups</h3>
+        <p>Automatic backups are created every 24 hours. Manual backups are available whenever you need one.</p>
+      </div>
+      <button type="button" id="createBackupBtn">Create manual backup</button>
+    </div>
+    <p id="backupStatus" class="backup-status" role="status" aria-live="polite"></p>
+    <div class="table-scroll">
+      <table id="backupTable">
+        <thead><tr><th>Type</th><th>Created</th><th>File size</th><th>Backup file</th><th>Action</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <p id="backupEmpty" class="backup-empty hidden">No backups have been created yet.</p>
+    <p class="backup-note">Backups are stored on this server. Download important copies to a separate location.</p>
   </section>
 
   <section id="tab-changepassword" class="tab-content card hidden">
@@ -252,5 +278,6 @@
   </div>
 
   <script src="/js/admin.js"></script>
+  <script src="/js/navigation.js"></script>
 </body>
 </html>

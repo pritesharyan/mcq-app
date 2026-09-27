@@ -1,0 +1,152 @@
+body.learner-app {
+  background-color: #f2f5f7;
+  background-image: repeating-linear-gradient(135deg, rgba(34, 62, 78, .025) 0, rgba(34, 62, 78, .025) 1px, transparent 1px, transparent 12px);
+  color: #283743;
+  font-family: 'DM Sans', sans-serif;
+}
+.learner-app h1, .learner-app h2, .learner-app h3, .learner-app h4,
+.learner-app .test-timer, .learner-app .test-progress-badge { font-family: 'Space Grotesk', 'DM Sans', sans-serif; }
+.learner-app header.app-header {
+  min-height: 66px;
+  background: #273d4a;
+  border-bottom: 3px solid #f0c65e;
+  box-shadow: 0 4px 18px rgba(32, 57, 70, .14);
+}
+.learner-app .app-brand { display: flex; min-width: 0; flex: 1; align-items: center; gap: 12px; }
+.learner-app .app-logo { display: block; width: 44px; height: 44px; flex: 0 0 44px; }
+.learner-app .app-brand h1 { min-width: 0; margin: 0; font-size: 19px; font-weight: 700; letter-spacing: 0; }
+.learner-app .header-right { font-size: 12px; }
+.learner-app .header-right > button:not(.menu-toggle) { min-height: 36px; background: #e9785e; border: 0; border-radius: 6px; font-weight: 700; }
+.learner-app .profile-icon-btn { background: #28594f !important; border: 1px solid rgba(255,255,255,.24) !important; }
+.learner-app .clock-bar { background: #e6f3f7; color: #315469; font-weight: 600; }
+.learner-app .trial-banner { background: #fff1d2; color: #78521b; border-bottom: 1px solid #efdaa9; }
+.learner-app .tabs { max-width: 1120px; gap: 6px; padding-top: 15px; }
+.learner-app .tab-btn {
+  background: #fffefa;
+  color: #51636f;
+  border: 1px solid #dbe5dc;
+  border-radius: 6px 6px 0 0;
+  font-weight: 600;
+  transition: background .16s ease, color .16s ease, transform .16s ease;
+}
+.learner-app .tab-btn:hover { background: #e8f4f8; color: #223d4e; }
+.learner-app .tab-btn.active { background: #247a9d; color: white; border-color: #247a9d; }
+.learner-app .tab-content { padding-top: 10px; padding-bottom: 34px; }
+.learner-app .card {
+  border: 1px solid #dbe5e9;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(33, 63, 78, .07);
+}
+.learner-app #selectors { border-top: 4px solid #efbd4f; }
+.learner-app #selectors h3, .learner-app #testSetup h3 { color: #273d4a; }
+.learner-app button { border-color: transparent; border-radius: 6px; background: #237da1; font-weight: 600; transition: transform .16s ease, box-shadow .16s ease, background .16s ease; }
+.learner-app button:hover { opacity: 1; transform: translateY(-1px); box-shadow: 0 5px 12px rgba(34, 92, 117, .16); }
+.learner-app button:focus-visible, .learner-app a:focus-visible, .learner-app input:focus-visible, .learner-app select:focus-visible, .learner-app textarea:focus-visible { outline: 3px solid #e7b948; outline-offset: 2px; }
+.learner-app #startBtn, .learner-app #testStartBtn { min-height: 46px; padding: 12px 20px; background: #e9785e; font-size: 14px; }
+.learner-app .link-btn { background: transparent; border: 0; color: #237da1; }
+.learner-app #selectors .link-btn {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  margin-left: 8px;
+  padding: 5px 10px;
+  border: 1px solid #237da1;
+  border-radius: 5px;
+  background: #237da1;
+  color: #fff;
+  font-size: 12px;
+  text-decoration: none;
+  vertical-align: middle;
+}
+.learner-app #selectors .link-btn:hover { background: #1e6b8a; color: #fff; }
+.learner-app #selectors .toggle-btn { border: 1px solid #237da1; background: #237da1; color: #fff; }
+.learner-app #selectors .toggle-btn:hover { background: #1e6b8a; color: #fff; }
+.learner-app #quiz { border-top: 4px solid #72bfd0; }
+.learner-app .question-text { color: #273d4a; font-size: 21px; font-weight: 600; line-height: 1.5; }
+.learner-app #options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 11px; }
+.learner-app #testOptions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.learner-app #options .option-btn, .learner-app #testOptions .option-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 62px;
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid #d7e4e9;
+  border-radius: 8px;
+  background: #f6fafb;
+  color: #304b59;
+  font-weight: 500;
+  line-height: 1.4;
+}
+.learner-app #options { counter-reset: answer-option; }
+.learner-app #options .option-btn::before, .learner-app #testOptions .option-btn::before {
+  display: inline-grid;
+  width: 29px;
+  height: 29px;
+  flex: 0 0 29px;
+  place-items: center;
+  border-radius: 50%;
+  background: #e2f2f6;
+  color: #247a9d;
+  font-size: 12px;
+  font-weight: 700;
+  content: counter(answer-option, upper-alpha);
+  counter-increment: answer-option;
+}
+.learner-app #options .option-btn:hover, .learner-app #testOptions .option-btn:hover { border-color: #74c1d1; background: #ecf7fa; }
+.learner-app #options .option-btn.selected, .learner-app #testOptions .option-btn.selected { border: 2px solid #2482a5; background: #e1f3f8; font-weight: 600; box-shadow: inset 0 0 0 1px rgba(36, 130, 165, .12); }
+.learner-app .option-btn.correct-light { background: #dff2c8; border-color: #83b748; color: #375c18; }
+.learner-app .option-btn.incorrect-light { background: #ffe4da; border-color: #e9785e; color: #823c2b; }
+.learner-app .option-btn.correct-light::before { background: #9ccc64; color: #193b1d; }
+.learner-app .option-btn.incorrect-light::before { background: #e9785e; color: white; }
+.learner-app #options .option-btn.correct-light, .learner-app #testOptions .option-btn.correct-light { background: #dff2c8; border-color: #83b748; color: #375c18; }
+.learner-app #options .option-btn.incorrect-light, .learner-app #testOptions .option-btn.incorrect-light { background: #ffe4da; border-color: #e9785e; color: #823c2b; }
+.practice-progress, .test-progress {
+  height: 7px;
+  overflow: hidden;
+  border-radius: 99px;
+  background: #e6eef1;
+}
+.practice-progress { margin: 0 0 19px; }
+.test-progress { margin: 6px 0 22px; }
+.practice-progress span, .test-progress span { display: block; width: 0; height: 100%; border-radius: inherit; background: #48a9c3; transition: width .3s ease; }
+.learner-app #progressBadge { background: #fff0bd; color: #6f5410; border-radius: 5px; }
+.learner-app .hint-btn { background: #f0ce62; color: #59420d; border-color: #e4bc3e; }
+.learner-app #explanationBox, .learner-app #attachmentBox { border-left: 3px solid #e9c458; border-radius: 0 6px 6px 0; background: #fff9e9; }
+.learner-app .test-layout { align-items: stretch; gap: 16px; }
+.learner-app .test-main { border-top: 4px solid #e9785e; }
+.learner-app .test-nav { border-top: 4px solid #efbd4f; }
+.learner-app .test-timer { color: #8d452e; background: #ffede4; border-radius: 6px; }
+.learner-app .nav-cell { border-radius: 6px; }
+.learner-app .nav-cell.nav-answered { background: #2d90ad; border-color: #247d98; }
+.learner-app .nav-cell.nav-skipped { background: #f0ce62; border-color: #d8b340; }
+.learner-app .nav-cell.nav-current { box-shadow: 0 0 0 3px rgba(45, 144, 173, .2); border-color: #247a9d; }
+.learner-app .submit-test-btn { background: #e9785e; }
+.learner-app #testResults { border-top: 4px solid #48a9c3; }
+.learner-app #testResultSummary { padding: 14px 16px; background: #e9f4f6; border-radius: 6px; }
+.learner-app #testResultSummary p:first-child { color: #27516a; font-family: 'Space Grotesk', sans-serif; font-size: 21px; }
+.learner-app .secondary-btn { background: #566b7a; color: white; }
+.learner-app .success-msg { color: #237da1; }
+.learner-app .pagination button:disabled { background: #dce5dd; color: #73847d; box-shadow: none; transform: none; }
+.learner-app #testOptions { counter-reset: answer-option; }
+
+@media (max-width: 640px) {
+  .learner-app .tab-content { padding: 0 10px 28px; }
+  .learner-app #options { grid-template-columns: 1fr; }
+  .learner-app #testOptions { grid-template-columns: 1fr; gap: 10px; }
+  .learner-app .question-text { font-size: 18px; }
+  .learner-app .test-layout { padding: 0 10px; }
+  .learner-app .test-nav-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+}
+
+@media (max-width: 760px) {
+  .learner-app .app-brand { gap: 8px; }
+  .learner-app .app-logo { width: 34px; height: 34px; flex-basis: 34px; }
+  .learner-app .app-brand h1 { font-size: 14px; line-height: 1.15; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .learner-app *, .learner-app *::before, .learner-app *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
+}

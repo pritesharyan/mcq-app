@@ -5,17 +5,28 @@ const forgotForm = document.getElementById('forgotForm');
 const toggle = document.getElementById('toggleMode');
 const forgotToggle = document.getElementById('forgotToggle');
 const title = document.getElementById('formTitle');
+const intro = document.getElementById('authIntro');
 const msg = document.getElementById('msg');
 
 function showMode(newMode) {
   mode = newMode;
   title.textContent = mode === 'login' ? 'Login' : mode === 'register' ? 'Register' : 'Forgot login details';
+  intro.textContent = mode === 'login'
+    ? 'Sign in to practise MCQs, take timed tests, and review your progress.'
+    : mode === 'register'
+      ? 'Create an account to start practising and track your progress.'
+      : 'Enter your registered email address to receive your login details.';
   loginForm.classList.toggle('hidden', mode !== 'login');
   registerForm.classList.toggle('hidden', mode !== 'register');
   forgotForm.classList.toggle('hidden', mode !== 'forgot');
-  toggle.textContent = mode === 'register' ? 'Have an account? Login' : 'Need an account? Register';
+  toggle.textContent = mode === 'register' ? 'Have an account? Login' : mode === 'forgot' ? 'Create an account' : 'Create an account';
+  toggle.href = mode === 'register' ? '#login' : '#register';
+  forgotToggle.textContent = mode === 'forgot' ? 'Back to login' : 'Forgot username or password?';
+  forgotToggle.href = mode === 'forgot' ? '#login' : '#forgot';
   msg.textContent = '';
 }
+
+if (window.location.hash === '#register') showMode('register');
 
 toggle.addEventListener('click', (e) => {
   e.preventDefault();
@@ -64,15 +75,34 @@ registerForm.addEventListener('submit', async (e) => {
 
 forgotForm.addEventListener('submit', async (e) => {
   e.preventDefault();
-  msg.textContent = '';
+  if (!forgotForm.reportValidity()) return;
+
+  const submitButton = forgotForm.querySelector('button[type="submit"]');
   const email = document.getElementById('forgotEmail').value.trim();
-  const { ok, data } = await submitJSON('/api/auth/forgot-password', { email });
-  msg.style.color = ok ? '#2ecc71' : '';
-  msg.textContent = data.message || data.error || 'Something went wrong';
-  if (ok) forgotForm.reset();
+  submitButton.disabled = true;
+  msg.style.color = '#64747e';
+  msg.textContent = 'Sending recovery instructions...';
+
+  try {
+    const { ok, data } = await submitJSON('/api/auth/forgot-password', { email });
+    msg.style.color = ok ? '#287a50' : '';
+    msg.textContent = ok
+      ? (data.message || 'If that email is registered, recovery instructions have been sent.')
+      : (data.error || 'We could not process your request. Please try again.');
+    if (ok) forgotForm.reset();
+  } catch {
+    msg.style.color = '';
+    msg.textContent = 'We could not reach the recovery service. Check your connection and try again.';
+  } finally {
+    submitButton.disabled = false;
+  }
 });
 
 function redirectForRole(role) {
+  if (new URLSearchParams(window.location.search).get('next') === 'materials') {
+    window.location.href = '/index.html?tab=materials';
+    return;
+  }
   window.location.href = (role === 'admin' || role === 'master_admin') ? '/admin.html' : '/index.html';
 }
 

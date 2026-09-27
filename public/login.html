@@ -1,42 +1,74 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <title>Higher Grade Pay - ITI</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Sign in or create a Higher Grade Pay - ITI learning account.">
+  <title>Login / Register | Higher Grade Pay - ITI</title>
   <link rel="stylesheet" href="/css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/login.css">
 </head>
-<body>
-  <div class="card auth-card">
-    <h2 id="formTitle">Login</h2>
+<body class="login-page">
+  <header class="auth-header">
+    <a class="auth-brand" href="/">
+      <img src="/higher-grade-pay-iti-logo.svg" alt="" aria-hidden="true">
+      <span><strong>Higher Grade Pay - ITI</strong><small>ITI LEARNING PLATFORM</small></span>
+    </a>
+  </header>
 
-    <form id="loginForm">
-      <input type="text" id="loginUsername" placeholder="Username" required autocomplete="username">
-      <input type="password" id="loginPassword" placeholder="Password" required autocomplete="current-password">
+  <main class="auth-main">
+    <section class="auth-panel" aria-labelledby="formTitle">
+      <a class="auth-back-link" href="/" aria-label="Back to Higher Grade Pay - ITI landing page"><span aria-hidden="true">&#8592;</span> Back to home</a>
+      <p class="auth-eyebrow">WELCOME</p>
+      <h1 id="formTitle">Login</h1>
+      <p class="auth-intro" id="authIntro">Sign in to practise MCQs, take timed tests, and review your progress.</p>
+
+    <form id="loginForm" class="auth-form">
+      <label for="loginUsername">Username</label>
+      <input type="text" id="loginUsername" placeholder="Enter your username" required autocomplete="username">
+      <label for="loginPassword">Password</label>
+      <input type="password" id="loginPassword" placeholder="Enter your password" required autocomplete="current-password">
       <button type="submit">Login</button>
     </form>
 
-    <form id="registerForm" class="hidden">
-      <input type="text" id="regName" placeholder="Full name" required>
-      <input type="text" id="regUsername" placeholder="Username" required>
-      <input type="tel" id="regMobile" placeholder="Mobile number" required pattern="[0-9]{10}" title="Enter a valid 10-digit mobile number">
-      <input type="email" id="regEmail" placeholder="Email (required — used to recover your username/password)" required>
-      <input type="password" id="regPassword" placeholder="Password (min 6 characters)" required autocomplete="new-password">
-      <input type="password" id="regConfirmPassword" placeholder="Confirm password" required autocomplete="new-password">
+    <form id="registerForm" class="auth-form hidden">
+      <label for="regName">Full name</label>
+      <input type="text" id="regName" placeholder="Enter your full name" required autocomplete="name">
+      <label for="regUsername">Username</label>
+      <input type="text" id="regUsername" placeholder="Choose a username" required autocomplete="username">
+      <label for="regMobile">Mobile number</label>
+      <input type="tel" id="regMobile" placeholder="10-digit mobile number" required pattern="[0-9]{10}" title="Enter a valid 10-digit mobile number" autocomplete="tel">
+      <label for="regEmail">Email address</label>
+      <input type="email" id="regEmail" placeholder="Used for account recovery" required autocomplete="email">
+      <label for="regPassword">Password</label>
+      <input type="password" id="regPassword" placeholder="At least 6 characters" required autocomplete="new-password">
+      <label for="regConfirmPassword">Confirm password</label>
+      <input type="password" id="regConfirmPassword" placeholder="Enter your password again" required autocomplete="new-password">
       <button type="submit">Register</button>
     </form>
 
-    <form id="forgotForm" class="hidden">
-      <p style="font-size:13px;color:#666">Enter your registered email. We'll send your username and a new password to it.</p>
-      <input type="email" id="forgotEmail" placeholder="Your registered email" required>
+    <form id="forgotForm" class="auth-form hidden">
+      <label for="forgotEmail">Registered email address</label>
+      <input type="email" id="forgotEmail" placeholder="Enter your account email" required autocomplete="email">
       <button type="submit">Send my login details</button>
     </form>
 
-    <p><a href="#" id="toggleMode">Need an account? Register</a></p>
-    <p><a href="#" id="forgotToggle">Forgot username or password?</a></p>
-    <p id="msg" class="error"></p>
-    <p style="font-size:12px;color:#888">Default master admin: admin / admin123</p>
-  </div>
+      <div class="auth-links">
+        <a href="#register" id="toggleMode">Create an account</a>
+        <a href="#forgot" id="forgotToggle">Forgot username or password?</a>
+      </div>
+      <p id="msg" class="auth-message" role="status" aria-live="polite"></p>
+      <p class="auth-legal">By continuing, you agree to the <a href="/#terms">Terms of Use</a> and acknowledge the <a href="/#privacy">Privacy Policy</a>.</p>
+    </section>
+  </main>
+
+  <footer class="auth-footer">
+    <span>&copy; 2026 Higher Grade Pay - ITI</span>
+    <a href="/">Return to landing page</a>
+  </footer>
   <script src="/js/login.js"></script>
 </body>
 </html>

@@ -9,6 +9,7 @@ with block/grant access.
 
 ## Stack
 - **Backend:** Node.js + Express
+- **Node.js:** 22.16 or newer (uses Node's SQLite online backup API)
 - **ORM/DB:** **Prisma** on SQLite for now — switching to Postgres later is a
   two-line change (see "Moving to Postgres" below), no route code changes needed
 - **Auth:** `express-session` + `bcryptjs` (passwords are hashed, not stored
@@ -38,6 +39,10 @@ Open `http://localhost:3000`.
   `lib/seed.js`). Change this password immediately via Admin > Users > Reset
   password, or the Change Password screen on the user side.
 - Anyone can **Register** — new accounts default to role `user`.
+
+## Database backups
+
+The server keeps consistent SQLite snapshots in the project-root `backups/` folder. It creates an automatic backup at startup when no automatic backup exists or the latest one is at least 24 hours old, then schedules the next backup 24 hours later. Master admins can create and download manual or automatic snapshots from Admin > Backups. Backup files stay on the same server, so download important copies to separate storage.
 
 ## About passwords — why they're hashed, not plaintext
 

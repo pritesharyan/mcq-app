@@ -26,6 +26,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     if (btn.dataset.tab === 'suggestions') renderSuggestionTable();
     if (btn.dataset.tab === 'users') renderUserTable();
     if (btn.dataset.tab === 'materials') renderMaterialTable();
+    if (btn.dataset.tab === 'backups') renderBackupTable();
   });
 });
 
@@ -43,6 +44,7 @@ async function init() {
   if (currentUser.role !== 'master_admin') {
     document.getElementById('materialForm').classList.add('hidden');
     document.getElementById('engagementTabBtn').classList.add('hidden');
+    document.getElementById('backupsTabBtn').classList.add('hidden');
   }
 
   await refreshAll();
@@ -54,7 +56,10 @@ async function init() {
   wireCreateUser();
   wireMaterialsAdmin();
   wireAdminChangePassword();
-  if (currentUser.role === 'master_admin') wireEngagement();
+  if (currentUser.role === 'master_admin') {
+    wireEngagement();
+    wireBackups();
+  }
 }
 
 // ---------- IMPORT / EXPORT (Excel) ----------
@@ -624,11 +629,81 @@ async function renderUserSessionsTable() {
 }
 
 function wireEngagement() {
+  document.getElementById('exportEngagementBtn').addEventListener('click', () => {
+    window.location.href = '/api/users/engagement/export';
+  });
   document.getElementById('engagementPrevPage').addEventListener('click', () => { if (engagementPage > 1) { engagementPage--; renderEngagementTable(); } });
   document.getElementById('engagementNextPage').addEventListener('click', () => { engagementPage++; renderEngagementTable(); });
   document.getElementById('userSessionsPrevPage').addEventListener('click', () => { if (userSessionsPage > 1) { userSessionsPage--; renderUserSessionsTable(); } });
   document.getElementById('userSessionsNextPage').addEventListener('click', () => { userSessionsPage++; renderUserSessionsTable(); });
   document.querySelector('.tab-btn[data-tab="engagement"]').addEventListener('click', renderEngagementTable);
+}
+
+async function renderBackupTable() {
+  const status = document.getElementById('backupStatus');
+  const tbody = document.querySelector('#backupTable tbody');
+  const res = await api('/api/backups');
+  if (!res || !res.ok) {
+    status.textContent = (res && res.data && res.data.error) || 'Could not load backups.';
+    return;
+  }
+
+  const backups = res.data.backups || [];
+  tbody.innerHTML = '';
+  backups.forEach(backup => {
+    const row = document.createElement('tr');
+    const type = document.createElement('td');
+    const created = document.createElement('td');
+    const size = document.createElement('td');
+    const filename = document.createElement('td');
+    const action = document.createElement('td');
+    const typeBadge = document.createElement('span');
+    const download = document.createElement('a');
+
+    typeBadge.className = `backup-type backup-type-${backup.type.toLowerCase()}`;
+    typeBadge.textContent = backup.type;
+    type.appendChild(typeBadge);
+    created.textContent = formatDate(backup.createdAt);
+    size.textContent = formatBackupSize(backup.sizeBytes);
+    filename.textContent = backup.filename;
+    download.href = `/api/backups/${encodeURIComponent(backup.filename)}/download`;
+    download.textContent = 'Download';
+    action.appendChild(download);
+    row.append(type, created, size, filename, action);
+    tbody.appendChild(row);
+  });
+
+  document.getElementById('backupEmpty').classList.toggle('hidden', backups.length > 0);
+  status.textContent = `${backups.length} backup${backups.length === 1 ? '' : 's'} available`;
+}
+
+function formatBackupSize(bytes) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function wireBackups() {
+  document.getElementById('createBackupBtn').addEventListener('click', async event => {
+    const button = event.currentTarget;
+    const status = document.getElementById('backupStatus');
+    button.disabled = true;
+    status.textContent = 'Creating a consistent database snapshot...';
+
+    try {
+      const res = await api('/api/backups', { method: 'POST' });
+      if (!res || !res.ok) {
+        status.textContent = (res && res.data && res.data.error) || 'Could not create a backup.';
+        return;
+      }
+      status.textContent = `Manual backup created: ${res.data.backup.filename}`;
+      await renderBackupTable();
+    } catch (error) {
+      status.textContent = error.message || 'Could not create a backup.';
+    } finally {
+      button.disabled = false;
+    }
+  });
 }
 
 function escapeHtml(s) {

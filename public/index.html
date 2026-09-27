@@ -5,12 +5,21 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <title>Higher Grade Pay - ITI</title>
   <link rel="stylesheet" href="/css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/navigation.css">
+  <link rel="stylesheet" href="/css/learner.css">
 </head>
-<body>
-  <header>
-    <h1>Higher Grade Pay - ITI</h1>
+<body class="learner-app">
+  <header class="app-header">
+    <div class="app-brand">
+      <img class="app-logo" src="/higher-grade-pay-iti-logo.svg" alt="" aria-hidden="true">
+      <h1>Higher Grade Pay - ITI</h1>
+    </div>
     <div class="header-right">
       <span id="who"></span>
+      <button type="button" id="menuToggle" class="menu-toggle" aria-controls="primaryNav" aria-expanded="false" aria-label="Open navigation" title="Open navigation"><span></span><span></span><span></span></button>
       <button type="button" id="profileIconBtn" class="profile-icon-btn" title="My Profile">👤</button>
       <button id="logoutBtn">Logout</button>
     </div>
@@ -18,7 +27,7 @@
   <div class="clock-bar"><span id="liveClock"></span></div>
   <div id="trialBanner" class="trial-banner hidden"></div>
 
-  <nav class="tabs">
+  <nav class="tabs" id="primaryNav" aria-label="Main navigation">
     <button class="tab-btn active" data-tab="practice">MCQ Practice</button>
     <button class="tab-btn" data-tab="test">Take a Test</button>
     <button class="tab-btn" data-tab="testhistory">My Test Results</button>
@@ -28,6 +37,7 @@
     <button class="tab-btn" data-tab="account">Change Password</button>
     <button class="tab-btn" data-tab="contact">Contact Us</button>
   </nav>
+  <button type="button" id="navBackdrop" class="nav-backdrop" aria-label="Close navigation"></button>
 
   <!-- ===================== MCQ PRACTICE ===================== -->
   <section id="tab-practice" class="tab-content">
@@ -51,6 +61,7 @@
 
     <section id="quiz" class="card hidden">
       <div id="progressBadge"></div>
+      <div class="practice-progress" role="progressbar" aria-label="Practice question progress" aria-valuemin="1" aria-valuemax="1" aria-valuenow="1"><span id="practiceProgressFill"></span></div>
       <div id="qText" class="question-text"></div>
       <div id="options"></div>
       <button type="button" id="hintBtn" class="hint-btn">💡 Hint</button>
@@ -97,6 +108,7 @@
             <div id="testTimer" class="test-timer">50:00</div>
             <div id="testProgressBadge"></div>
           </div>
+          <div class="test-progress" role="progressbar" aria-label="Test question progress" aria-valuemin="1" aria-valuemax="1" aria-valuenow="1"><span id="testProgressFill"></span></div>
           <div id="testQText" class="question-text"></div>
           <div id="testOptions"></div>
           <div class="nav-row">
@@ -218,7 +230,7 @@
       <label>Username</label>
       <input type="text" id="profileUsername" disabled>
       <label>Mobile</label>
-      <input type="text" id="profileMobile" required pattern="[0-9]{10}" title="Enter a valid 10-digit mobile number">
+      <input type="tel" id="profileMobile" required pattern="[0-9]{10}" inputmode="numeric" maxlength="10" autocomplete="tel" title="Enter exactly 10 digits">
       <label>Email</label>
       <input type="email" id="profileEmail">
       <p id="profileMsg" class="error"></p>
@@ -230,5 +242,6 @@
   </div>
 
   <script src="/js/app.js"></script>
+  <script src="/js/navigation.js"></script>
 </body>
 </html>

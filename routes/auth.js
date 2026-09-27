@@ -122,21 +122,26 @@ router.post('/change-password', requireAuth, async (req, res, next) => {
 router.post('/forgot-password', async (req, res, next) => {
   try {
     const { email } = req.body;
-    const generic = { ok: true, message: 'If that email is registered, we\'ve sent the username and a new password to it.' };
+    const generic = { ok: true, message: 'If that email is registered, we\'ve sent your username and a temporary password. Check your inbox and spam folder. If you do not receive it, contact support.' };
     if (!email || !EMAIL_RE.test(email.trim())) return res.json(generic);
 
     const user = await prisma.user.findUnique({ where: { email: email.trim() } });
     if (!user) return res.json(generic);
 
     const tempPassword = crypto.randomBytes(5).toString('hex');
+    try {
+      await sendMail({
+        to: user.email,
+        subject: 'Your Higher Grade Pay - ITI login details',
+        text: `Hi ${user.name},\n\nYour username is: ${user.username}\nYour new temporary password is: ${tempPassword}\n\nPlease log in and change your password from the Change Password tab.\n\n- Higher Grade Pay - ITI`
+      });
+    } catch (mailError) {
+      console.error('Recovery email delivery failed:', mailError.code || mailError.message);
+      return res.json(generic);
+    }
+
     const hash = await bcrypt.hash(tempPassword, 10);
     await prisma.user.update({ where: { id: user.id }, data: { password: hash } });
-
-    await sendMail({
-      to: user.email,
-      subject: 'Your Higher Grade Pay - ITI login details',
-      text: `Hi ${user.name},\n\nYour username is: ${user.username}\nYour new temporary password is: ${tempPassword}\n\nPlease log in and change your password from the Change Password tab.\n\n- Higher Grade Pay - ITI`
-    });
 
     res.json(generic);
   } catch (err) { next(err); }
@@ -158,7 +163,9 @@ router.put('/profile', requireAuth, async (req, res, next) => {
     const { name, mobile, email } = req.body;
     if (!name || !name.trim()) return res.status(400).json({ error: 'Name is required' });
     if (!email || !EMAIL_RE.test(email.trim())) return res.status(400).json({ error: 'A valid email is required' });
-    if (!mobile || !mobile.trim()) return res.status(400).json({ error: 'Mobile number is required' });   
+    if (typeof mobile !== 'string' || !/^[0-9]{10}$/.test(mobile.trim())) {
+      return res.status(400).json({ error: 'Mobile number is required and must contain exactly 10 digits' });
+    }
     const existingEmail = await prisma.user.findFirst({
       where: { email: email.trim(), NOT: { id: req.session.user.id } }
     });

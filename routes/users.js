@@ -1,6 +1,7 @@
 const router = require('express').Router();
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
+const XLSX = require('xlsx');
 const prisma = require('../lib/prisma');
 const { requireAdmin, requireMasterAdmin } = require('../middleware/auth');
 const { isTrialRestricted, TRIAL_PRACTICE_LIMIT } = require('../lib/trial');
@@ -188,6 +189,83 @@ router.get('/engagement', requireMasterAdmin, async (req, res, next) => {
     const total = rows.length;
     const paged = rows.slice((page - 1) * pageSize, (page - 1) * pageSize + pageSize);
     res.json({ items: paged, total, page, pageSize, totalPages: Math.max(Math.ceil(total / pageSize), 1) });
+  } catch (err) { next(err); }
+});
+
+// Master admin: download all user summaries and every individual login session as Excel.
+router.get('/engagement/export', requireMasterAdmin, async (req, res, next) => {
+  try {
+    const [users, sessions] = await Promise.all([
+      prisma.user.findMany({
+        select: { id: true, name: true, username: true, role: true },
+        orderBy: { id: 'asc' }
+      }),
+      prisma.userSession.findMany({
+        include: { user: { select: { name: true, username: true, role: true } } },
+        orderBy: [{ userId: 'asc' }, { loginAt: 'desc' }]
+      })
+    ]);
+
+    const statsByUser = new Map();
+    sessions.forEach(session => {
+      const stats = statsByUser.get(session.userId) || {
+        totalSessions: 0, totalSeconds: 0, lastLoginAt: null, online: false
+      };
+      stats.totalSessions++;
+      stats.totalSeconds += sessionDurationSeconds(session);
+      if (!stats.lastLoginAt || session.loginAt > stats.lastLoginAt) stats.lastLoginAt = session.loginAt;
+      if (isCurrentlyOnline(session)) stats.online = true;
+      statsByUser.set(session.userId, stats);
+    });
+
+    const summaryRows = users.map(user => {
+      const stats = statsByUser.get(user.id) || {
+        totalSessions: 0, totalSeconds: 0, lastLoginAt: null, online: false
+      };
+      return {
+        Name: user.name,
+        Username: user.username,
+        Role: user.role,
+        'Total Sessions': stats.totalSessions,
+        'Total Time (seconds)': stats.totalSeconds,
+        'Last Login': stats.lastLoginAt,
+        'Online Now': stats.online ? 'Yes' : 'No'
+      };
+    }).sort((a, b) => b['Total Time (seconds)'] - a['Total Time (seconds)']);
+
+    const sessionRows = sessions.map(session => {
+      const duration = sessionDurationSeconds(session);
+      const hours = Math.floor(duration / 3600);
+      const minutes = Math.floor((duration % 3600) / 60);
+      const seconds = duration % 60;
+      return {
+        Name: session.user.name,
+        Username: session.user.username,
+        Role: session.user.role,
+        'Login At': session.loginAt,
+        'Last Active At': session.lastActiveAt,
+        'Logout At': session.logoutAt,
+        'Duration (seconds)': duration,
+        'Duration (h:mm:ss)': `${hours}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`,
+        'Online Now': isCurrentlyOnline(session) ? 'Yes' : 'No'
+      };
+    });
+
+    const workbook = XLSX.utils.book_new();
+    const summarySheet = XLSX.utils.json_to_sheet(summaryRows, {
+      header: ['Name', 'Username', 'Role', 'Total Sessions', 'Total Time (seconds)', 'Last Login', 'Online Now']
+    });
+    const sessionsSheet = XLSX.utils.json_to_sheet(sessionRows, {
+      header: ['Name', 'Username', 'Role', 'Login At', 'Last Active At', 'Logout At', 'Duration (seconds)', 'Duration (h:mm:ss)', 'Online Now']
+    });
+    XLSX.utils.book_append_sheet(workbook, summarySheet, 'User Summary');
+    XLSX.utils.book_append_sheet(workbook, sessionsSheet, 'Session Details');
+
+    const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+    const date = new Date().toISOString().slice(0, 10);
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="user-engagement-${date}.xlsx"`);
+    res.send(buffer);
   } catch (err) { next(err); }
 });
 

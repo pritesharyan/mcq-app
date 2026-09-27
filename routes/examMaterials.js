@@ -2,6 +2,25 @@ const router = require('express').Router();
 const prisma = require('../lib/prisma');
 const { requireAuth, requireMasterAdmin } = require('../middleware/auth');
 
+// Public landing-page view: exposes published material details only, without account metadata.
+router.get('/public', async (req, res, next) => {
+  try {
+    const rows = await prisma.examMaterial.findMany({
+      include: { paper: true },
+      orderBy: { id: 'asc' }
+    });
+    res.json({
+      items: rows.map((row, index) => ({
+        sr_no: index + 1,
+        paper_name: row.paper ? row.paper.name : '',
+        material_name: row.materialName,
+        keywords: row.keywords || '',
+        download_url: row.downloadLink
+      }))
+    });
+  } catch (err) { next(err); }
+});
+
 // Any logged-in user can browse/search the exam material download table.
 // GET /api/materials?q=algebra&page=1&pageSize=10
 router.get('/', requireAuth, async (req, res, next) => {

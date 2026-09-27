@@ -42,6 +42,10 @@ async function init() {
   wireMaterials();
   wireMySuggestions();
   wireTestHistory();
+
+  if (new URLSearchParams(window.location.search).get('tab') === 'materials') {
+    document.querySelector('.tab-btn[data-tab="materials"]').click();
+  }
 }
 
 /* ======================================================================
@@ -91,11 +95,17 @@ async function saveProfile() {
   const name = document.getElementById('profileName').value.trim();
   const mobile = document.getElementById('profileMobile').value.trim();
   const email = document.getElementById('profileEmail').value.trim();
+  const msg = document.getElementById('profileMsg');
+  if (!/^[0-9]{10}$/.test(mobile)) {
+    msg.textContent = 'Mobile number is required and must contain exactly 10 digits.';
+    document.getElementById('profileMobile').focus();
+    return;
+  }
+
   const res = await api('/api/auth/profile', {
     method: 'PUT', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ name, mobile, email })
   });
-  const msg = document.getElementById('profileMsg');
   if (!res.ok) { msg.textContent = (res.data && res.data.error) || 'Could not save profile'; return; }
   document.getElementById('who').textContent = `Hi, ${res.data.user.name}`;
   closeProfile();
@@ -197,6 +207,10 @@ async function startQuiz() {
 function renderQuestion() {
   const q = state.questions[state.index];
   document.getElementById('progressBadge').textContent = `(${state.index + 1}/${state.questions.length})`;
+  const practiceProgress = Math.round(((state.index + 1) / state.questions.length) * 100);
+  document.getElementById('practiceProgressFill').style.width = `${practiceProgress}%`;
+  document.querySelector('.practice-progress').setAttribute('aria-valuemax', state.questions.length);
+  document.querySelector('.practice-progress').setAttribute('aria-valuenow', state.index + 1);
   document.getElementById('qText').textContent = q.question.text;
 
   const optsDiv = document.getElementById('options');
@@ -416,6 +430,10 @@ function renderTestQuestion() {
   testState.visited.add(testState.index);
   const q = testState.questions[testState.index];
   document.getElementById('testProgressBadge').textContent = `(${testState.index + 1}/${testState.questions.length})`;
+  const testProgress = Math.round(((testState.index + 1) / testState.questions.length) * 100);
+  document.getElementById('testProgressFill').style.width = `${testProgress}%`;
+  document.querySelector('.test-progress').setAttribute('aria-valuemax', testState.questions.length);
+  document.querySelector('.test-progress').setAttribute('aria-valuenow', testState.index + 1);
   document.getElementById('testQText').textContent = q.question.text;
 
   const optsDiv = document.getElementById('testOptions');

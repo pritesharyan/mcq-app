@@ -1,0 +1,78 @@
+:root {
+  color-scheme: light;
+  --auth-ink: #273d4a;
+  --auth-muted: #64747e;
+  --auth-blue: #247a9d;
+  --auth-coral: #e9785e;
+  --auth-amber: #f0c65e;
+  --auth-line: #dce5e9;
+}
+
+body.login-page {
+  min-height: 100vh;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  background: #f2f5f7;
+  color: var(--auth-ink);
+  font-family: 'DM Sans', sans-serif;
+}
+.login-page a { color: var(--auth-blue); }
+.auth-header {
+  min-height: 76px;
+  padding: 12px max(24px, calc((100vw - 1100px) / 2));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  background: #fff;
+  border-bottom: 1px solid var(--auth-line);
+}
+.auth-brand { display: flex; align-items: center; gap: 11px; color: var(--auth-ink) !important; text-decoration: none; }
+.auth-brand img { width: 42px; height: 42px; flex: 0 0 42px; }
+.auth-brand strong { display: block; font-family: 'Space Grotesk', sans-serif; font-size: 15px; }
+.auth-brand small { display: block; margin-top: 4px; color: var(--auth-muted); font-size: 9px; font-weight: 700; letter-spacing: 1.1px; }
+.home-link { font-size: 13px; font-weight: 600; text-decoration: none; }
+.home-link:hover, .auth-links a:hover, .auth-legal a:hover, .auth-footer a:hover { text-decoration: underline; text-underline-offset: 3px; }
+.auth-main { width: 100%; flex: 1; display: grid; place-items: center; padding: 44px 20px; }
+.auth-panel {
+  width: min(100%, 440px);
+  padding: 34px 36px 30px;
+  background: #fff;
+  border: 1px solid var(--auth-line);
+  border-top: 4px solid var(--auth-blue);
+  border-radius: 8px;
+  box-shadow: 0 12px 34px rgba(33, 63, 78, .08);
+}
+.auth-back-link { display: inline-flex; align-items: center; gap: 8px; margin: 0 0 22px; color: var(--auth-blue); font-size: 12px; font-weight: 600; text-decoration: none; }
+.auth-back-link span { font-size: 18px; line-height: 1; }
+.auth-back-link:hover { text-decoration: underline; text-underline-offset: 3px; }
+.auth-eyebrow { margin: 0 0 8px; color: var(--auth-blue); font-size: 10px; font-weight: 700; letter-spacing: 1.4px; }
+.auth-panel h1 { margin: 0; color: var(--auth-ink); font-family: 'Space Grotesk', sans-serif; font-size: 30px; line-height: 1.2; }
+.auth-intro { margin: 10px 0 24px; color: var(--auth-muted); font-size: 13px; line-height: 1.6; }
+.auth-form { display: grid; gap: 8px; }
+.auth-form label { margin-top: 5px; color: #344e5b; font-size: 12px; font-weight: 700; }
+.auth-form input { width: 100%; min-height: 44px; padding: 10px 12px; border: 1px solid #cdd9df; border-radius: 5px; background: #fff; color: var(--auth-ink); font: inherit; font-size: 14px; }
+.auth-form input::placeholder { color: #89969d; }
+.auth-form input:focus { border-color: var(--auth-blue); outline: 3px solid rgba(36, 122, 157, .15); }
+.auth-form button { min-height: 46px; margin-top: 10px; padding: 12px 16px; border: 0; border-radius: 5px; background: var(--auth-blue); color: white; font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }
+.auth-form button:hover { background: #1d6887; }
+.auth-form button:focus-visible, .auth-header a:focus-visible, .auth-links a:focus-visible, .auth-back-link:focus-visible { outline: 3px solid var(--auth-amber); outline-offset: 3px; }
+.auth-links { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; margin-top: 19px; font-size: 12px; }
+.auth-links a { font-weight: 600; text-decoration: none; }
+.auth-message { min-height: 20px; margin: 12px 0 0; color: #a74332; font-size: 12px; line-height: 1.5; }
+.auth-legal { margin: 16px 0 0; padding-top: 14px; border-top: 1px solid #e7edef; color: var(--auth-muted); font-size: 10px; line-height: 1.6; }
+.auth-legal a { text-decoration: none; }
+.auth-footer { display: flex; justify-content: space-between; gap: 20px; padding: 18px max(24px, calc((100vw - 1100px) / 2)); color: var(--auth-muted); font-size: 11px; }
+.auth-footer a { text-decoration: none; }
+
+@media (max-width: 520px) {
+  .auth-header { min-height: 66px; padding: 10px 16px; }
+  .auth-brand img { width: 36px; height: 36px; flex-basis: 36px; }
+  .auth-brand strong { font-size: 13px; }
+  .home-link { font-size: 12px; }
+  .auth-main { align-items: start; padding: 24px 14px; }
+  .auth-panel { padding: 26px 20px 22px; }
+  .auth-panel h1 { font-size: 27px; }
+  .auth-footer { padding: 15px 16px; font-size: 10px; }
+}

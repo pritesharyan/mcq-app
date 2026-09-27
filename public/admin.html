@@ -15,11 +15,12 @@
   <nav class="tabs">
     <button class="tab-btn active" data-tab="papers">Papers</button>
     <button class="tab-btn" data-tab="books">Books</button>
-    <button class="tab-btn" data-tab="chapters">Chapters</button>
     <button class="tab-btn" data-tab="questions">Questions</button>
     <button class="tab-btn" data-tab="suggestions">Suggestions <span id="suggestionCountBadge"></span></button>
     <button class="tab-btn" data-tab="users">Users</button>
     <button class="tab-btn" data-tab="materials">Exam Materials</button>
+    <button class="tab-btn" data-tab="engagement" id="engagementTabBtn">User Engagement</button>
+    <button class="tab-btn" data-tab="changepassword">Change Password</button>
   </nav>
 
   <section id="tab-papers" class="tab-content card">
@@ -46,19 +47,6 @@
     <table id="bookTable"><thead><tr><th>Name</th><th>Papers</th><th>Actions</th></tr></thead><tbody></tbody></table>
   </section>
 
-  <section id="tab-chapters" class="tab-content card hidden">
-    <h3>Chapters</h3>
-    <form id="chapterForm">
-      <input type="hidden" id="chapterId">
-      <label>Chapter name</label>
-      <input type="text" id="chapterName" required>
-      <label>Book</label>
-      <select id="chapterBookSelect" required></select>
-      <button type="submit">Save</button>
-    </form>
-    <table id="chapterTable"><thead><tr><th>Name</th><th>Book</th><th>Actions</th></tr></thead><tbody></tbody></table>
-  </section>
-
   <section id="tab-questions" class="tab-content card hidden">
     <h3>Questions</h3>
     <p id="questionsScopeNote" style="font-size:13px;color:#888"></p>
@@ -75,8 +63,8 @@
 
     <form id="questionForm" enctype="multipart/form-data">
       <input type="hidden" id="questionId">
-      <label>Chapter</label>
-      <select id="questionChapterSelect" required></select>
+      <label>Book</label>
+      <select id="questionBookSelect" required></select>
 
       <label>Question (English)</label>
       <textarea id="question_en"></textarea>
@@ -110,10 +98,10 @@
     </form>
 
     <div class="row">
-      <label>Filter by chapter</label>
-      <select id="questionFilterChapter"><option value="">-- All --</option></select>
+      <label>Filter by book</label>
+      <select id="questionFilterBook"><option value="">-- All --</option></select>
     </div>
-    <table id="questionTable"><thead><tr><th>Question</th><th>Chapter</th><th>Actions</th></tr></thead><tbody></tbody></table>
+    <table id="questionTable"><thead><tr><th>Question</th><th>Book</th><th>Actions</th></tr></thead><tbody></tbody></table>
     <div class="pagination">
       <button id="questionsPrevPage">&laquo; Prev</button>
       <span id="questionsPageInfo"></span>
@@ -133,7 +121,7 @@
       </select>
     </div>
     <table id="suggestionTable">
-      <thead><tr><th>Question</th><th>Chapter</th><th>From</th><th>Suggestion</th><th>Status</th><th>Actions</th></tr></thead>
+      <thead><tr><th>Question</th><th>Book</th><th>From</th><th>Suggestion</th><th>Status</th><th>Actions</th></tr></thead>
       <tbody></tbody>
     </table>
     <div class="pagination">
@@ -166,8 +154,11 @@
       <div id="createUserResult" class="hidden"></div>
     </form>
 
+    <div class="row">
+      <input type="text" id="usersSearchInput" placeholder="Search by name, username, mobile, or email...">
+    </div>
     <table id="userTable">
-      <thead><tr><th>Name</th><th>Username</th><th>Mobile</th><th>Email</th><th>Role</th><th>Status</th><th>Actions</th></tr></thead>
+      <thead><tr><th>Name</th><th>Username</th><th>Mobile</th><th>Email</th><th>Role</th><th>Status</th><th>Trial</th><th>Created</th><th>Actions</th></tr></thead>
       <tbody></tbody>
     </table>
     <div class="pagination">
@@ -204,6 +195,47 @@
       <span id="materialsAdminPageInfo"></span>
       <button id="materialsAdminNextPage">Next &raquo;</button>
     </div>
+  </section>
+
+  <section id="tab-engagement" class="tab-content card hidden">
+    <h3>User Engagement</h3>
+    <p style="font-size:13px;color:#888">Time spent is calculated from each login until logout, or until their last activity if they never explicitly logged out (closing the tab doesn't log a user out immediately). "Online now" means they've been active in the last 5 minutes.</p>
+    <table id="engagementTable">
+      <thead><tr><th>Name</th><th>Username</th><th>Role</th><th>Sessions</th><th>Total Time</th><th>Last Login</th><th>Status</th><th>Actions</th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <div class="pagination">
+      <button id="engagementPrevPage">&laquo; Prev</button>
+      <span id="engagementPageInfo"></span>
+      <button id="engagementNextPage">Next &raquo;</button>
+    </div>
+
+    <div id="userSessionsBox" class="hidden">
+      <h4>Sessions for <span id="userSessionsName"></span></h4>
+      <table id="userSessionsTable">
+        <thead><tr><th>Login</th><th>Logout</th><th>Duration</th><th>Status</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <div class="pagination">
+        <button id="userSessionsPrevPage">&laquo; Prev</button>
+        <span id="userSessionsPageInfo"></span>
+        <button id="userSessionsNextPage">Next &raquo;</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="tab-changepassword" class="tab-content card hidden">
+    <h3>Change Password</h3>
+    <form id="adminChangePasswordForm">
+      <label>Current password</label>
+      <input type="password" id="adminCurrentPassword" required>
+      <label>New password (min 6 characters)</label>
+      <input type="password" id="adminNewPassword" required>
+      <label>Confirm new password</label>
+      <input type="password" id="adminConfirmNewPassword" required>
+      <button type="submit">Update password</button>
+      <p id="adminPwMsg" class="error"></p>
+    </form>
   </section>
 
   <!-- Reset-password mini dialog, reused from the Users tab -->

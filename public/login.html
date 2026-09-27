@@ -19,7 +19,7 @@
     <form id="registerForm" class="hidden">
       <input type="text" id="regName" placeholder="Full name" required>
       <input type="text" id="regUsername" placeholder="Username" required>
-      <input type="tel" id="regMobile" placeholder="Mobile number (optional)">
+      <input type="tel" id="regMobile" placeholder="Mobile number" required pattern="[0-9]{10}" title="Enter a valid 10-digit mobile number">
       <input type="email" id="regEmail" placeholder="Email (required — used to recover your username/password)" required>
       <input type="password" id="regPassword" placeholder="Password (min 6 characters)" required autocomplete="new-password">
       <input type="password" id="regConfirmPassword" placeholder="Confirm password" required autocomplete="new-password">

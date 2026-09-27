@@ -16,6 +16,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     if (btn.dataset.tab === 'materials') { materialsPage = 1; loadMaterials(); }
     if (btn.dataset.tab === 'mysuggestions') { mySuggestionsPage = 1; loadMySuggestions(); }
     if (btn.dataset.tab === 'testhistory') { testHistoryPage = 1; loadTestHistory(); }
+    if (btn.dataset.tab === 'practicelog') loadPracticeLog();
   });
 });
 
@@ -23,8 +24,10 @@ async function init() {
   const me = await api('/api/auth/me');
   if (!me || !me.ok) return;
   document.getElementById('who').textContent = `Hi, ${me.data.user.name || me.data.user.username}`;
+  applyTrialBanner(me.data.trial);
 
-  await loadPracticeFilters();
+  startLiveClock();
+  await loadPracticeSelectors();
   await loadTestBookCheckboxes();
 
   document.getElementById('logoutBtn').addEventListener('click', async () => {
@@ -39,6 +42,28 @@ async function init() {
   wireMaterials();
   wireMySuggestions();
   wireTestHistory();
+}
+
+/* ======================================================================
+   LIVE CLOCK (India Standard Time) + TRIAL STATUS BANNER
+   ====================================================================== */
+function formatIST(date) {
+  const dateStr = date.toLocaleDateString('en-GB', { timeZone: 'Asia/Kolkata', day: '2-digit', month: 'short', year: 'numeric' });
+  const timeStr = date.toLocaleTimeString('en-US', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+  return `${dateStr}, ${timeStr} IST`;
+}
+function startLiveClock() {
+  const el = document.getElementById('liveClock');
+  if (!el) return;
+  const tick = () => { el.textContent = formatIST(new Date()); };
+  tick();
+  setInterval(tick, 1000);
+}
+function applyTrialBanner(trial) {
+  const banner = document.getElementById('trialBanner');
+  if (!trial || !trial.restricted) { banner.classList.add('hidden'); return; }
+  banner.classList.remove('hidden');
+  banner.textContent = `Your account is on a limited trial (${trial.used}/${trial.limit} practice questions used). My Test Results and Practice Log are unavailable until an admin upgrades your account.`;
 }
 
 /* ======================================================================
@@ -77,44 +102,71 @@ async function saveProfile() {
 }
 
 /* ======================================================================
-   PRACTICE QUIZ (chapter-based, self-paced)
+   MCQ PRACTICE (multi-select papers/books, instant feedback, self-paced)
    ====================================================================== */
 let state = { questions: [], index: 0, answered: {} };
-let selected = null;
+let allPapersForPractice = [];
+let allBooksForPractice = [];
+let hintExpanded = false;
 
-async function loadPracticeFilters() {
-  const papers = await api('/api/papers');
-  const paperSelect = document.getElementById('paperSelect');
-  (papers.data || []).forEach(p => paperSelect.append(new Option(p.name, p.id)));
-  await loadBooks();
-  await loadChapters();
+async function loadPracticeSelectors() {
+  const [papersRes, booksRes] = await Promise.all([api('/api/papers'), api('/api/books')]);
+  allPapersForPractice = papersRes.data || [];
+  allBooksForPractice = booksRes.data || [];
+
+  const paperDiv = document.getElementById('paperCheckboxes');
+  paperDiv.innerHTML = '';
+  allPapersForPractice.forEach(p => {
+    const label = document.createElement('label');
+    label.className = 'checkbox-label';
+    label.innerHTML = `<input type="checkbox" class="paper-check" value="${p.id}"> ${escapeHtml(p.name)}`;
+    paperDiv.appendChild(label);
+  });
+  renderBookCheckboxesForPractice();
 }
 
-async function loadBooks() {
-  const paperId = document.getElementById('paperSelect').value;
-  const res = await api('/api/books' + (paperId ? `?paper_id=${paperId}` : ''));
-  const sel = document.getElementById('bookSelect');
-  sel.innerHTML = '<option value="">-- All --</option>';
-  (res.data || []).forEach(b => sel.append(new Option(b.name, b.id)));
-}
+function renderBookCheckboxesForPractice() {
+  const selectedPaperIds = Array.from(document.querySelectorAll('.paper-check:checked')).map(c => parseInt(c.value, 10));
+  const bookDiv = document.getElementById('bookCheckboxes');
+  const previouslyChecked = Array.from(document.querySelectorAll('.book-check:checked')).map(c => parseInt(c.value, 10));
+  bookDiv.innerHTML = '';
 
-async function loadChapters() {
-  const bookId = document.getElementById('bookSelect').value;
-  const res = await api('/api/chapters' + (bookId ? `?book_id=${bookId}` : ''));
-  const sel = document.getElementById('chapterSelect');
-  sel.innerHTML = '<option value="">-- All --</option>';
-  (res.data || []).forEach(c => sel.append(new Option(c.name, c.id)));
+  if (!selectedPaperIds.length) {
+    bookDiv.innerHTML = '<p class="hint-text">Select at least one paper above to see its books.</p>';
+    return;
+  }
+  const relevantBooks = allBooksForPractice.filter(b => (b.paper_ids || []).some(pid => selectedPaperIds.includes(pid)));
+  if (!relevantBooks.length) {
+    bookDiv.innerHTML = '<p class="hint-text">No books are linked to the selected paper(s) yet.</p>';
+    return;
+  }
+  relevantBooks.forEach(b => {
+    const label = document.createElement('label');
+    label.className = 'checkbox-label';
+    const checked = previouslyChecked.includes(b.id) ? 'checked' : '';
+    label.innerHTML = `<input type="checkbox" class="book-check" value="${b.id}" ${checked}> ${escapeHtml(b.name)}`;
+    bookDiv.appendChild(label);
+  });
 }
 
 function wirePracticeQuiz() {
-  document.getElementById('paperSelect').addEventListener('change', async () => { await loadBooks(); await loadChapters(); });
-  document.getElementById('bookSelect').addEventListener('change', loadChapters);
+  document.getElementById('paperCheckboxes').addEventListener('change', renderBookCheckboxesForPractice);
+  document.getElementById('selectAllPapersBtn').addEventListener('click', () => {
+    const boxes = document.querySelectorAll('.paper-check');
+    const allChecked = Array.from(boxes).every(b => b.checked);
+    boxes.forEach(b => b.checked = !allChecked);
+    renderBookCheckboxesForPractice();
+  });
+  document.getElementById('selectAllBooksBtn').addEventListener('click', () => {
+    const boxes = document.querySelectorAll('.book-check');
+    const allChecked = Array.from(boxes).every(b => b.checked);
+    boxes.forEach(b => b.checked = !allChecked);
+  });
   document.getElementById('startBtn').addEventListener('click', startQuiz);
   document.getElementById('prevBtn').addEventListener('click', () => go(-1));
   document.getElementById('nextBtn').addEventListener('click', () => go(1));
-  document.getElementById('submitAnswerBtn').addEventListener('click', checkAnswer);
   document.getElementById('selectorsToggle').addEventListener('click', toggleSelectors);
-  document.getElementById('hintBtn').addEventListener('click', showHint);
+  document.getElementById('hintBtn').addEventListener('click', toggleHint);
   document.getElementById('suggestToggleBtn').addEventListener('click', openSuggestForm);
   document.getElementById('suggestCancelBtn').addEventListener('click', closeSuggestForm);
   document.getElementById('suggestSubmitBtn').addEventListener('click', submitSuggestion);
@@ -129,18 +181,10 @@ function toggleSelectors() {
 }
 
 async function startQuiz() {
-  const paper_id = document.getElementById('paperSelect').value;
-  const book_id = document.getElementById('bookSelect').value;
-  const chapter_id = document.getElementById('chapterSelect').value;
-  const lang = document.getElementById('langSelect').value;
+  const bookIds = Array.from(document.querySelectorAll('.book-check:checked')).map(c => c.value);
+  if (!bookIds.length) { alert('Select at least one book first.'); return; }
 
-  const params = new URLSearchParams();
-  if (paper_id) params.set('paper_id', paper_id);
-  if (book_id) params.set('book_id', book_id);
-  if (chapter_id) params.set('chapter_id', chapter_id);
-  params.set('lang', lang);
-
-  const res = await api('/api/questions?' + params.toString());
+  const res = await api('/api/questions?book_ids=' + bookIds.join(','));
   const questions = res.data;
   if (!questions || !questions.length) { alert('No questions found for this selection.'); return; }
 
@@ -151,7 +195,6 @@ async function startQuiz() {
 }
 
 function renderQuestion() {
-  selected = null;
   const q = state.questions[state.index];
   document.getElementById('progressBadge').textContent = `(${state.index + 1}/${state.questions.length})`;
   document.getElementById('qText').textContent = q.question.text;
@@ -167,40 +210,45 @@ function renderQuestion() {
     optsDiv.appendChild(btn);
   });
 
+  hintExpanded = false;
   document.getElementById('explanationBox').classList.add('hidden');
   document.getElementById('attachmentBox').classList.add('hidden');
+  document.getElementById('hintBtn').textContent = '💡 Hint';
   closeSuggestForm();
 
   const prevAnswer = state.answered[q.id];
   if (prevAnswer) showResult(q, prevAnswer);
 }
 
-function selectOption(i) {
-  selected = i;
-  document.querySelectorAll('#options .option-btn').forEach(b => b.classList.remove('selected'));
-  document.querySelector(`#options .option-btn[data-index="${i}"]`).classList.add('selected');
-}
-
-function checkAnswer() {
+// Selecting an option instantly grades it - no separate "check answer" step.
+function selectOption(chosen) {
   const q = state.questions[state.index];
-  const chosen = state.answered[q.id] || selected;
-  if (!chosen) { alert('Select an option first'); return; }
+  if (state.answered[q.id]) return; // already graded, ignore further clicks on this question
   state.answered[q.id] = chosen;
+
+  // Fire-and-forget: records this as a practiced question for the Practice Log /
+  // trial cap. Server re-derives correctness itself, never trusts the client.
+  api('/api/practice/attempt', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ question_id: q.id, chosen_option: chosen })
+  }).then(res => {
+    if (!res.ok && res.data && res.data.error) {
+      // Most likely the 50-question trial cap was hit - surface it plainly.
+      document.getElementById('trialBanner').classList.remove('hidden');
+      document.getElementById('trialBanner').textContent = res.data.error;
+    }
+  });
+
   showResult(q, chosen);
 }
 
 function showResult(q, chosen) {
   document.querySelectorAll('#options .option-btn').forEach(b => {
     const idx = parseInt(b.dataset.index, 10);
-    b.classList.remove('correct', 'incorrect');
-    if (idx === q.correct_option) b.classList.add('correct');
-    else if (idx === chosen) b.classList.add('incorrect');
+    b.classList.remove('correct-light', 'incorrect-light');
+    if (idx === q.correct_option) b.classList.add('correct-light');
+    else if (idx === chosen) b.classList.add('incorrect-light');
   });
-  if (q.explanation.text) {
-    document.getElementById('explanationBox').classList.remove('hidden');
-    document.getElementById('explanationText').textContent = q.explanation.text;
-  }
-  if (q.attachment_url) renderAttachment('attachmentBox', 'attachmentContent', q);
 }
 
 function renderAttachment(boxId, contentId, q) {
@@ -218,9 +266,18 @@ function renderAttachment(boxId, contentId, q) {
   }
 }
 
-function showHint() {
+// Toggles: first click expands the explanation/attachment, second click collapses it again.
+function toggleHint() {
   const q = state.questions[state.index];
-  if (!q.explanation.text) { alert('No explanation was added for this question.'); return; }
+  hintExpanded = !hintExpanded;
+  document.getElementById('hintBtn').textContent = hintExpanded ? '💡 Hide Hint' : '💡 Hint';
+
+  if (!hintExpanded) {
+    document.getElementById('explanationBox').classList.add('hidden');
+    document.getElementById('attachmentBox').classList.add('hidden');
+    return;
+  }
+  if (!q.explanation.text) { alert('No explanation was added for this question.'); hintExpanded = false; document.getElementById('hintBtn').textContent = '💡 Hint'; return; }
   document.getElementById('explanationBox').classList.remove('hidden');
   document.getElementById('explanationText').textContent = q.explanation.text;
   if (q.attachment_url) renderAttachment('attachmentBox', 'attachmentContent', q);
@@ -290,9 +347,8 @@ async function startTest() {
   if (!bookIds.length) { alert('Select at least one book.'); return; }
   const count = parseInt(document.getElementById('testCount').value, 10) || 25;
   const minutes = parseInt(document.getElementById('testMinutes').value, 10) || 50;
-  const lang = document.getElementById('testLangSelect').value;
 
-  const params = new URLSearchParams({ book_ids: bookIds.join(','), count: String(count), lang });
+  const params = new URLSearchParams({ book_ids: bookIds.join(','), count: String(count) });
   const res = await api('/api/test?' + params.toString());
   if (!res.ok || !res.data.questions.length) { alert('No questions found for the selected books.'); return; }
 
@@ -515,7 +571,7 @@ async function loadMySuggestions() {
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${escapeHtml(s.question_preview)}</td>
-      <td>${escapeHtml(s.chapter_name)}</td>
+      <td>${escapeHtml(s.book_name)}</td>
       <td>${escapeHtml(s.suggestion_text)}</td>
       <td class="status-${s.status}">${s.status}</td>
       <td>${escapeHtml(s.admin_note || '')}</td>
@@ -539,8 +595,16 @@ let testHistoryPage = 1;
 
 async function loadTestHistory() {
   document.getElementById('testHistoryReview').classList.add('hidden');
+  const lockedBox = document.getElementById('testHistoryLocked');
   const res = await api(`/api/test/attempts?page=${testHistoryPage}&pageSize=10`);
-  if (!res.ok) return;
+  if (!res.ok) {
+    lockedBox.textContent = (res.data && res.data.error) || 'Not available.';
+    lockedBox.classList.remove('hidden');
+    document.getElementById('testHistoryTable').classList.add('hidden');
+    return;
+  }
+  lockedBox.classList.add('hidden');
+  document.getElementById('testHistoryTable').classList.remove('hidden');
 
   const tbody = document.querySelector('#testHistoryTable tbody');
   tbody.innerHTML = '';
@@ -554,13 +618,23 @@ async function loadTestHistory() {
       <td><strong>${a.correct_count} / ${a.total_questions}</strong></td>
       <td>${a.attempted} / ${a.total_questions}</td>
       <td>${mins}m ${secs}s</td>
-      <td><button onclick="reviewTestAttempt(${a.id})">Review</button></td>
+      <td>
+        <button onclick="reviewTestAttempt(${a.id})">Review</button>
+        <button onclick="deleteTestAttempt(${a.id})" class="secondary-btn">Delete</button>
+      </td>
     `;
     tbody.appendChild(tr);
   });
   document.getElementById('testHistoryPageInfo').textContent = `Page ${res.data.page} of ${res.data.totalPages} (${res.data.total} attempt${res.data.total === 1 ? '' : 's'})`;
   document.getElementById('testHistoryPrevPage').disabled = res.data.page <= 1;
   document.getElementById('testHistoryNextPage').disabled = res.data.page >= res.data.totalPages;
+}
+
+async function deleteTestAttempt(id) {
+  if (!confirm('Delete this test result? This cannot be undone.')) return;
+  const res = await api(`/api/test/attempts/${id}`, { method: 'DELETE' });
+  if (!res.ok) { alert((res.data && res.data.error) || 'Could not delete this result.'); return; }
+  await loadTestHistory();
 }
 
 async function reviewTestAttempt(id) {
@@ -609,6 +683,46 @@ function wireChangePassword() {
     msg.textContent = 'Password updated.';
     document.getElementById('changePasswordForm').reset();
   });
+}
+
+/* ======================================================================
+   PRACTICE LOG (how many of each book's questions have been practiced)
+   ====================================================================== */
+async function loadPracticeLog() {
+  const lockedBox = document.getElementById('practiceLogLocked');
+  const res = await api('/api/practice/log');
+  if (!res.ok) {
+    lockedBox.textContent = (res.data && res.data.error) || 'Not available.';
+    lockedBox.classList.remove('hidden');
+    document.getElementById('practiceLogTable').classList.add('hidden');
+    return;
+  }
+  lockedBox.classList.add('hidden');
+  document.getElementById('practiceLogTable').classList.remove('hidden');
+
+  const tbody = document.querySelector('#practiceLogTable tbody');
+  const tfoot = document.querySelector('#practiceLogTable tfoot');
+  tbody.innerHTML = '';
+  tfoot.innerHTML = '';
+
+  (res.data.items || []).forEach(row => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${row.sr_no}</td>
+      <td>${escapeHtml(row.paper_name || '—')}</td>
+      <td>${escapeHtml(row.book_name)}</td>
+      <td>${row.total_questions}</td>
+      <td>${row.attended_questions}</td>
+      <td>${row.percentage}%</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  const t = res.data.totals || { total_questions: 0, attended_questions: 0, percentage: 0 };
+  const totalRow = document.createElement('tr');
+  totalRow.className = 'practice-log-total-row';
+  totalRow.innerHTML = `<td colspan="3"><strong>Total</strong></td><td><strong>${t.total_questions}</strong></td><td><strong>${t.attended_questions}</strong></td><td><strong>${t.percentage}%</strong></td>`;
+  tfoot.appendChild(totalRow);
 }
 
 function escapeHtml(s) {

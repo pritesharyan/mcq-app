@@ -2,6 +2,7 @@ const router = require('express').Router();
 const path = require('path');
 const prisma = require('../lib/prisma');
 const { requireAuth } = require('../middleware/auth');
+const { isTrialRestricted } = require('../lib/trial');
 
 function split(stored) {
   if (!stored) return { en: '', gu: '', hasEn: false, hasGu: false };
@@ -33,7 +34,7 @@ function shuffle(arr) {
 }
 
 // GET /api/test?book_ids=1,2,3&count=25&lang=both
-// Pulls every question across the selected books' chapters, shuffles, and
+// Pulls every question across the selected books, shuffles, and
 // returns up to `count` of them in random order - the "Take a Test" pool.
 router.get('/', requireAuth, async (req, res, next) => {
   try {
@@ -43,8 +44,8 @@ router.get('/', requireAuth, async (req, res, next) => {
     if (!bookIds.length) return res.status(400).json({ error: 'No valid book_ids provided' });
 
     const rows = await prisma.question.findMany({
-      where: { chapter: { bookId: { in: bookIds } } },
-      include: { chapter: true }
+      where: { bookId: { in: bookIds } },
+      include: { book: true }
     });
 
     const wanted = Math.max(parseInt(count, 10) || 25, 1);
@@ -52,8 +53,8 @@ router.get('/', requireAuth, async (req, res, next) => {
 
     const out = picked.map(r => ({
       id: r.id,
-      chapter_id: r.chapterId,
-      chapter_name: r.chapter.name,
+      book_id: r.bookId,
+      book_name: r.book.name,
       question: displayField(r.questionText, lang),
       options: [r.option1, r.option2, r.option3, r.option4].map(o => displayField(o, lang)),
       correct_option: r.correctOption,
@@ -104,8 +105,12 @@ router.post('/submit', requireAuth, async (req, res, next) => {
 });
 
 // GET /api/test/attempts?page=1&pageSize=10 - the current user's own past test results.
+// Trial-restricted accounts (see lib/trial.js) don't get this feature until an admin lifts the cap.
 router.get('/attempts', requireAuth, async (req, res, next) => {
   try {
+    if (isTrialRestricted(req.user)) {
+      return res.status(403).json({ error: 'My Test Results is available once your account is upgraded by an admin.' });
+    }
     const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
     const pageSize = Math.max(parseInt(req.query.pageSize, 10) || 10, 1);
     const where = { userId: req.session.user.id };
@@ -129,6 +134,16 @@ router.get('/attempts', requireAuth, async (req, res, next) => {
       })),
       total, page, pageSize, totalPages: Math.max(Math.ceil(total / pageSize), 1)
     });
+  } catch (err) { next(err); }
+});
+
+// A user can delete their own past test result.
+router.delete('/attempts/:id', requireAuth, async (req, res, next) => {
+  try {
+    const attempt = await prisma.testAttempt.findUnique({ where: { id: parseInt(req.params.id, 10) } });
+    if (!attempt || attempt.userId !== req.session.user.id) return res.status(404).json({ error: 'Not found' });
+    await prisma.testAttempt.delete({ where: { id: attempt.id } });
+    res.json({ ok: true });
   } catch (err) { next(err); }
 });
 

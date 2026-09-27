@@ -21,11 +21,11 @@ app.use('/api/auth', require('./routes/auth'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/papers', require('./routes/papers'));
 app.use('/api/books', require('./routes/books'));
-app.use('/api/chapters', require('./routes/chapters'));
 app.use('/api/questions', require('./routes/questions'));
 app.use('/api/suggestions', require('./routes/suggestions'));
 app.use('/api/test', require('./routes/test'));
 app.use('/api/exam-materials', require('./routes/examMaterials'));
+app.use('/api/practice', require('./routes/practice'));
 
 // Generic error handler (e.g. multer file-type/size rejections, Prisma errors)
 app.use((err, req, res, next) => {

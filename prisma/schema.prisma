@@ -12,20 +12,23 @@ datasource db {
 }
 
 model User {
-  id            Int      @id @default(autoincrement())
-  name          String
-  username      String   @unique
-  mobile        String?
-  email         String   @unique // mandatory - used for forgot-username/password recovery
-  password      String   // NOTE: temporary/reset passwords only, see auth routes. Not the user's original password.
-  role          String   @default("user") // "user" | "admin" | "master_admin"
-  status        String   @default("active") // "active" | "blocked"
-  createdAt     DateTime @default(now())
+  id             Int      @id @default(autoincrement())
+  name           String
+  username       String   @unique
+  mobile         String?
+  email          String   @unique // mandatory - used for forgot-username/password recovery
+  password       String   // NOTE: temporary/reset passwords only, see auth routes. Not the user's original password.
+  role           String   @default("user") // "user" | "admin" | "master_admin"
+  status         String   @default("active") // "active" | "blocked" (admin-controlled login block, separate from the trial cap below)
+  unlimitedAccess Boolean @default(false) // master/admin-granted: lifts the 24h trial cap on new "user" accounts (see auth/trial helper)
+  createdAt      DateTime @default(now())
 
-  questions     Question[]           @relation("QuestionCreatedBy")
-  suggestions   QuestionSuggestion[]
-  examMaterials ExamMaterial[]
-  testAttempts  TestAttempt[]
+  questions        Question[]           @relation("QuestionCreatedBy")
+  suggestions      QuestionSuggestion[]
+  examMaterials    ExamMaterial[]
+  testAttempts     TestAttempt[]
+  sessions         UserSession[]
+  practiceAttempts PracticeAttempt[]
 }
 
 model Paper {
@@ -36,10 +39,10 @@ model Paper {
 }
 
 model Book {
-  id       Int         @id @default(autoincrement())
-  name     String
-  papers   PaperBook[]
-  chapters Chapter[]
+  id        Int         @id @default(autoincrement())
+  name      String
+  papers    PaperBook[]
+  questions Question[]
 }
 
 model PaperBook {
@@ -51,18 +54,10 @@ model PaperBook {
   @@id([paperId, bookId])
 }
 
-model Chapter {
-  id        Int        @id @default(autoincrement())
-  name      String
-  bookId    Int
-  book      Book       @relation(fields: [bookId], references: [id], onDelete: Cascade)
-  questions Question[]
-}
-
 model Question {
   id             Int      @id @default(autoincrement())
-  chapterId      Int
-  chapter        Chapter  @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  bookId         Int
+  book           Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
   questionText   String   // "English//Gujarati" or single-language
   option1        String
   option2        String
@@ -76,7 +71,8 @@ model Question {
   createdBy      User     @relation("QuestionCreatedBy", fields: [createdById], references: [id])
   createdAt      DateTime @default(now())
 
-  suggestions    QuestionSuggestion[]
+  suggestions      QuestionSuggestion[]
+  practiceAttempts PracticeAttempt[]
 }
 
 model QuestionSuggestion {
@@ -116,4 +112,37 @@ model TestAttempt {
   durationSeconds Int      // how long the test took, from start to submit
   answersJson     String   // JSON: [{questionId, chosenOption, correctOption, isCorrect}], used for the review screen
   createdAt       DateTime @default(now())
+}
+
+// One row per login, for the master admin's "User Engagement" view. lastActiveAt is
+// updated periodically (a throttled "heartbeat" on authenticated requests, not just at
+// login) specifically so "time spent" reflects real activity rather than just how long
+// the login cookie happens to remain valid if someone closes the tab without logging out.
+model UserSession {
+  id           Int       @id @default(autoincrement())
+  userId       Int
+  user         User      @relation(fields: [userId], references: [id])
+  loginAt      DateTime  @default(now())
+  lastActiveAt DateTime  @default(now())
+  logoutAt     DateTime? // null while the session is ongoing (or was abandoned without explicit logout)
+}
+
+// One row per (user, question) ever answered in PRACTICE MCQ mode (not "Take a Test",
+// which is tracked separately via TestAttempt). Upserted on every practice answer, so a
+// row's mere existence means "this user has practiced this question at least once" -
+// which is exactly what both the Practice Log (progress per book) and the 24h trial's
+// 50-question cap need to count.
+model PracticeAttempt {
+  id            Int      @id @default(autoincrement())
+  userId        Int
+  user          User     @relation(fields: [userId], references: [id])
+  questionId    Int
+  question      Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  bookId        Int      // denormalized from question.bookId at write time, for fast per-book grouping
+  isCorrect     Boolean
+  chosenOption  Int?
+  createdAt     DateTime @default(now()) // first-practiced time (kept on update, see routes/practice.js)
+  lastAttemptAt DateTime @default(now()) // most recent attempt time - powers "Last Practiced" in the Practice Log
+
+  @@unique([userId, questionId])
 }

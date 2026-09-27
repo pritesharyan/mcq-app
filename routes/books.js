@@ -38,8 +38,7 @@ router.put('/:id', requireAdmin, async (req, res, next) => {
     await prisma.paperBook.deleteMany({ where: { bookId } });
     if (paper_ids && paper_ids.length) {
       await prisma.paperBook.createMany({
-        data: paper_ids.map(pid => ({ paperId: parseInt(pid, 10), bookId })),
-        skipDuplicates: true
+        data: paper_ids.map(pid => ({ paperId: parseInt(pid, 10), bookId }))
       });
     }
     res.json({ ok: true });

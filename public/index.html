@@ -15,37 +15,37 @@
       <button id="logoutBtn">Logout</button>
     </div>
   </header>
+  <div class="clock-bar"><span id="liveClock"></span></div>
+  <div id="trialBanner" class="trial-banner hidden"></div>
 
   <nav class="tabs">
-    <button class="tab-btn active" data-tab="practice">Practice MCQ</button>
+    <button class="tab-btn active" data-tab="practice">MCQ Practice</button>
     <button class="tab-btn" data-tab="test">Take a Test</button>
     <button class="tab-btn" data-tab="testhistory">My Test Results</button>
+    <button class="tab-btn" data-tab="practicelog">Practice Log</button>
     <button class="tab-btn" data-tab="materials">Exam Materials</button>
     <button class="tab-btn" data-tab="mysuggestions">My Suggestions</button>
     <button class="tab-btn" data-tab="account">Change Password</button>
     <button class="tab-btn" data-tab="contact">Contact Us</button>
   </nav>
 
-  <!-- ===================== PRACTICE QUIZ ===================== -->
+  <!-- ===================== MCQ PRACTICE ===================== -->
   <section id="tab-practice" class="tab-content">
     <section id="selectors" class="card">
       <div class="collapsible-header" id="selectorsHeader">
-        <h3>Quiz Setup</h3>
+        <h3>Selecting MCQ's</h3>
         <button type="button" id="selectorsToggle" class="toggle-btn">Hide ▲</button>
       </div>
       <div id="selectorsBody">
-        <div class="row"><label>Paper</label><select id="paperSelect"><option value="">-- All --</option></select></div>
-        <div class="row"><label>Book</label><select id="bookSelect"><option value="">-- All --</option></select></div>
-        <div class="row"><label>Chapter</label><select id="chapterSelect"><option value="">-- All --</option></select></div>
         <div class="row">
-          <label>Language</label>
-          <select id="langSelect">
-            <option value="both">Both</option>
-            <option value="en">English</option>
-            <option value="gu">Gujarati</option>
-          </select>
+          <label>Papers <button type="button" id="selectAllPapersBtn" class="link-btn">Select all</button></label>
+          <div id="paperCheckboxes" class="checkbox-grid"></div>
         </div>
-        <button id="startBtn">Start Quiz</button>
+        <div class="row">
+          <label>Books <button type="button" id="selectAllBooksBtn" class="link-btn">Select all</button></label>
+          <div id="bookCheckboxes" class="checkbox-grid"><p class="hint-text">Select at least one paper above to see its books.</p></div>
+        </div>
+        <button id="startBtn">Start Practice</button>
       </div>
     </section>
 
@@ -71,7 +71,6 @@
 
       <div class="nav-row">
         <button id="prevBtn">Previous</button>
-        <button id="submitAnswerBtn">Check Answer</button>
         <button id="nextBtn">Next</button>
       </div>
     </section>
@@ -85,14 +84,7 @@
         <label>Select one or more books</label>
         <div id="testBookCheckboxes"></div>
       </div>
-      <div class="row">
-        <label>Language</label>
-        <select id="testLangSelect">
-          <option value="both">Both</option>
-          <option value="en">English</option>
-          <option value="gu">Gujarati</option>
-        </select>
-      </div>
+      
       <div class="row"><label>Number of questions</label><input type="number" id="testCount" value="25" min="1"></div>
       <div class="row"><label>Time limit (minutes)</label><input type="number" id="testMinutes" value="50" min="1"></div>
       <button id="testStartBtn">Start Test</button>
@@ -157,7 +149,7 @@
   <section id="tab-mysuggestions" class="tab-content hidden card">
     <h3>My Suggestions</h3>
     <table id="mySuggestionsTable">
-      <thead><tr><th>Question</th><th>Chapter</th><th>My suggestion</th><th>Status</th><th>Admin note</th></tr></thead>
+      <thead><tr><th>Question</th><th>Book</th><th>My suggestion</th><th>Status</th><th>Admin note</th></tr></thead>
       <tbody></tbody>
     </table>
     <div class="pagination">
@@ -170,6 +162,7 @@
   <!-- ===================== MY TEST RESULTS ===================== -->
   <section id="tab-testhistory" class="tab-content hidden card">
     <h3>My Test Results</h3>
+    <div id="testHistoryLocked" class="hidden"></div>
     <table id="testHistoryTable">
       <thead><tr><th>Date</th><th>Score</th><th>Attempted</th><th>Duration</th><th>Actions</th></tr></thead>
       <tbody></tbody>
@@ -180,6 +173,18 @@
       <button id="testHistoryNextPage">Next &raquo;</button>
     </div>
     <div id="testHistoryReview" class="hidden"></div>
+  </section>
+
+  <!-- ===================== PRACTICE LOG ===================== -->
+  <section id="tab-practicelog" class="tab-content hidden card">
+    <h3>Practice Log</h3>
+    <p style="font-size:13px;color:#888">How many of each book's questions you've practiced at least once. Re-practicing a question doesn't add to the count again.</p>
+    <div id="practiceLogLocked" class="hidden"></div>
+    <table id="practiceLogTable">
+      <thead><tr><th>Sr. No</th><th>Paper</th><th>Book</th><th>Total Questions</th><th>Attended</th><th>Percentage</th></tr></thead>
+      <tbody></tbody>
+      <tfoot></tfoot>
+    </table>
   </section>
 
   <!-- ===================== CHANGE PASSWORD ===================== -->
@@ -213,7 +218,7 @@
       <label>Username</label>
       <input type="text" id="profileUsername" disabled>
       <label>Mobile</label>
-      <input type="text" id="profileMobile">
+      <input type="text" id="profileMobile" required pattern="[0-9]{10}" title="Enter a valid 10-digit mobile number">
       <label>Email</label>
       <input type="email" id="profileEmail">
       <p id="profileMsg" class="error"></p>

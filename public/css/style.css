@@ -24,8 +24,19 @@ form label { font-weight: 600; margin-top: 8px; display: block; }
 .question-text { font-size: 18px; margin: 16px 0; white-space: pre-wrap; }
 .option-btn { display: block; width: 100%; text-align: left; margin: 6px 0; background: #ecf0f1; color: #222; border: 1px solid #ccc; white-space: pre-wrap; }
 .option-btn.selected { border-color: #3498db; border-width: 2px; }
-.option-btn.correct { background: #2ecc71; color: white; }
-.option-btn.incorrect { background: #e74c3c; color: white; }
+.option-btn.correct-light { background: #c8f7c5; color: #1b5e20; border-color: #7bc67e; font-weight: 600; }
+.option-btn.incorrect-light { background: #f9d2d2; color: #7a1212; border-color: #e08a8a; font-weight: 600; }
+
+/* Live IST clock + trial banner */
+.clock-bar { text-align: center; padding: 6px; font-size: 13px; color: #555; background: #eef2f5; }
+.trial-banner { background: #fff3cd; color: #7a5c00; padding: 8px 16px; text-align: center; font-size: 13px; }
+
+/* Multi-select checkbox grids (Papers/Books on MCQ Practice) */
+.checkbox-grid { display: flex; flex-wrap: wrap; gap: 8px 16px; padding: 8px 0; }
+.hint-text { color: #888; font-size: 13px; margin: 6px 0; }
+
+/* Practice Log */
+.practice-log-total-row { background: #f4f6f7; }
 .nav-row { display: flex; gap: 10px; margin-top: 16px; }
 .attachment-img { max-width: 100%; border-radius: 4px; margin-top: 8px; }
 #explanationBox, #attachmentBox { margin-top: 16px; padding: 12px; background: #f9f9f9; border-radius: 4px; white-space: pre-wrap; }

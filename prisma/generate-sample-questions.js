@@ -1,9 +1,9 @@
 // Generates 100 placeholder MCQ questions for testing the app end-to-end
-// (pagination, the test mode, export, etc.) before you've entered real content.
-// Run with: npm run sample-data
+// (pagination, the test mode, export, Practice Log, etc.) before you've
+// entered real content. Run with: npm run sample-data
 //
-// If no Book/Chapter exists yet, this first creates a "Sample Paper" > "Sample
-// Book" > 5 chapters to attach the questions to. If your own books/chapters
+// If no Book exists yet, this first creates a "Sample Paper" > "Sample Book"
+// (plus 4 more sample books) to attach the questions to. If your own books
 // already exist, it uses those instead and doesn't touch your real data.
 const prisma = require('../lib/prisma');
 
@@ -12,24 +12,23 @@ const TOPICS = ['History', 'Geography', 'Science', 'Mathematics', 'Computer Scie
 function randInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
 function pick(arr) { return arr[randInt(0, arr.length - 1)]; }
 
-async function ensureSampleStructure() {
-  const existing = await prisma.chapter.findMany();
+async function ensureSampleBooks() {
+  const existing = await prisma.book.findMany();
   if (existing.length > 0) return existing;
 
   const paper = await prisma.paper.create({ data: { name: 'Sample Paper' } });
-  const book = await prisma.book.create({ data: { name: 'Sample Book' } });
-  await prisma.paperBook.create({ data: { paperId: paper.id, bookId: book.id } });
-
-  const chapters = [];
-  for (const name of ['Chapter 1', 'Chapter 2', 'Chapter 3', 'Chapter 4', 'Chapter 5']) {
-    chapters.push(await prisma.chapter.create({ data: { name, bookId: book.id } }));
+  const books = [];
+  for (const name of ['Sample Book 1', 'Sample Book 2', 'Sample Book 3', 'Sample Book 4', 'Sample Book 5']) {
+    const book = await prisma.book.create({ data: { name } });
+    await prisma.paperBook.create({ data: { paperId: paper.id, bookId: book.id } });
+    books.push(book);
   }
-  console.log('No existing Book/Chapter found - created "Sample Paper" > "Sample Book" > 5 chapters.');
-  return chapters;
+  console.log('No existing Book found - created "Sample Paper" with 5 sample books.');
+  return books;
 }
 
 async function main() {
-  const chapters = await ensureSampleStructure();
+  const books = await ensureSampleBooks();
 
   let admin = await prisma.user.findFirst({ where: { role: 'master_admin' } });
   if (!admin) admin = await prisma.user.findFirst();
@@ -40,7 +39,7 @@ async function main() {
 
   let created = 0;
   for (let i = 1; i <= 100; i++) {
-    const chapter = pick(chapters);
+    const book = pick(books);
     const topic = pick(TOPICS);
     const correct = randInt(1, 4);
     const options = ['Option A', 'Option B', 'Option C', 'Option D'];
@@ -48,7 +47,7 @@ async function main() {
 
     await prisma.question.create({
       data: {
-        chapterId: chapter.id,
+        bookId: book.id,
         questionText: `Sample ${topic} question #${i} - which of the following is correct?`,
         option1: options[0], option2: options[1], option3: options[2], option4: options[3],
         correctOption: correct,

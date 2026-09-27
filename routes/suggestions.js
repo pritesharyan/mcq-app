@@ -6,7 +6,7 @@ function toRow(r, includeUsername) {
   const row = {
     id: r.id,
     question_id: r.questionId,
-    chapter_name: r.question.chapter.name,
+    book_name: r.question.book.name,
     question_preview: (r.question.questionText || '').split('//')[0].slice(0, 100),
     suggestion_text: r.suggestionText,
     status: r.status,
@@ -45,7 +45,7 @@ router.get('/mine', requireAuth, async (req, res, next) => {
       prisma.questionSuggestion.count({ where }),
       prisma.questionSuggestion.findMany({
         where,
-        include: { question: { include: { chapter: true } } },
+        include: { question: { include: { book: true } } },
         orderBy: { createdAt: 'desc' },
         skip: (page - 1) * pageSize,
         take: pageSize
@@ -72,7 +72,7 @@ router.get('/', requireAdmin, async (req, res, next) => {
       prisma.questionSuggestion.count({ where }),
       prisma.questionSuggestion.findMany({
         where,
-        include: { user: true, question: { include: { chapter: true } } },
+        include: { user: true, question: { include: { book: true } } },
         orderBy: { createdAt: 'desc' },
         skip: (page - 1) * pageSize,
         take: pageSize

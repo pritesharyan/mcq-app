@@ -6,11 +6,12 @@ async function api(url, opts) {
   return { ok: res.ok, status: res.status, data };
 }
 
-let papers = [], books = [], chapters = [];
+let papers = [], books = [];
 let currentUser = null;
 let questionsPage = 1;
 let suggestionsPage = 1;
 let usersPage = 1;
+let usersSearch = '';
 let materialsAdminPage = 1;
 let materialsAdminSearch = '';
 let materialsList = [];
@@ -41,6 +42,7 @@ async function init() {
 
   if (currentUser.role !== 'master_admin') {
     document.getElementById('materialForm').classList.add('hidden');
+    document.getElementById('engagementTabBtn').classList.add('hidden');
   }
 
   await refreshAll();
@@ -51,13 +53,15 @@ async function init() {
   wireUsersPagination();
   wireCreateUser();
   wireMaterialsAdmin();
+  wireAdminChangePassword();
+  if (currentUser.role === 'master_admin') wireEngagement();
 }
 
 // ---------- IMPORT / EXPORT (Excel) ----------
 function wireImportExport() {
   document.getElementById('exportQuestionsBtn').addEventListener('click', () => {
-    const chapter_id = document.getElementById('questionFilterChapter').value;
-    const params = chapter_id ? `?chapter_id=${chapter_id}` : '';
+    const book_id = document.getElementById('questionFilterBook').value;
+    const params = book_id ? `?book_id=${book_id}` : '';
     window.location.href = '/api/questions/export' + params;
   });
 
@@ -90,10 +94,8 @@ function wireImportExport() {
 async function refreshAll() {
   papers = (await api('/api/papers')).data || [];
   books = (await api('/api/books')).data || [];
-  chapters = (await api('/api/chapters')).data || [];
   renderPaperTable();
   renderBookTable();
-  renderChapterTable();
   renderQuestionFilters();
   questionsPage = 1;
   await renderQuestionTable();
@@ -179,67 +181,23 @@ window.editBook = (id) => {
   renderBookPaperCheckboxes(b.paper_ids);
 };
 window.deleteBook = async (id) => {
-  if (!confirm('Delete this book and all its chapters/questions?')) return;
+  if (!confirm('Delete this book and all its questions?')) return;
   await api(`/api/books/${id}`, { method: 'DELETE' });
-  await refreshAll();
-};
-
-// ---------- CHAPTERS ----------
-function fillBookSelect(sel) {
-  const current = sel.value;
-  sel.innerHTML = '<option value="">-- select book --</option>';
-  books.forEach(b => sel.append(new Option(b.name, b.id)));
-  if (current) sel.value = current;
-}
-function renderChapterTable() {
-  fillBookSelect(document.getElementById('chapterBookSelect'));
-  const tbody = document.querySelector('#chapterTable tbody');
-  tbody.innerHTML = '';
-  chapters.forEach(c => {
-    const bookName = books.find(b => b.id === c.book_id)?.name || '';
-    const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${escapeHtml(c.name)}</td><td>${escapeHtml(bookName)}</td><td>
-      <button onclick="editChapter(${c.id})">Edit</button>
-      <button onclick="deleteChapter(${c.id})">Delete</button></td>`;
-    tbody.appendChild(tr);
-  });
-}
-document.getElementById('chapterForm').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const id = document.getElementById('chapterId').value;
-  const name = document.getElementById('chapterName').value.trim();
-  const book_id = document.getElementById('chapterBookSelect').value;
-  await api(id ? `/api/chapters/${id}` : '/api/chapters', {
-    method: id ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, book_id })
-  });
-  document.getElementById('chapterForm').reset();
-  document.getElementById('chapterId').value = '';
-  await refreshAll();
-});
-window.editChapter = (id) => {
-  const c = chapters.find(x => x.id === id);
-  document.getElementById('chapterId').value = c.id;
-  document.getElementById('chapterName').value = c.name;
-  document.getElementById('chapterBookSelect').value = c.book_id;
-};
-window.deleteChapter = async (id) => {
-  if (!confirm('Delete this chapter and all its questions?')) return;
-  await api(`/api/chapters/${id}`, { method: 'DELETE' });
   await refreshAll();
 };
 
 // ---------- QUESTIONS (paginated, ownership-scoped for regular admins) ----------
 function renderQuestionFilters() {
-  const chapSel = document.getElementById('questionChapterSelect');
-  const currentChap = chapSel.value;
-  chapSel.innerHTML = '<option value="">-- select chapter --</option>';
-  chapters.forEach(c => chapSel.append(new Option(c.name, c.id)));
-  if (currentChap) chapSel.value = currentChap;
+  const bookSel = document.getElementById('questionBookSelect');
+  const currentBook = bookSel.value;
+  bookSel.innerHTML = '<option value="">-- select book --</option>';
+  books.forEach(b => bookSel.append(new Option(b.name, b.id)));
+  if (currentBook) bookSel.value = currentBook;
 
-  const filterSel = document.getElementById('questionFilterChapter');
+  const filterSel = document.getElementById('questionFilterBook');
   const currentFilter = filterSel.value;
   filterSel.innerHTML = '<option value="">-- All --</option>';
-  chapters.forEach(c => filterSel.append(new Option(c.name, c.id)));
+  books.forEach(b => filterSel.append(new Option(b.name, b.id)));
   if (currentFilter) filterSel.value = currentFilter;
   filterSel.onchange = () => { questionsPage = 1; renderQuestionTable(); };
 }
@@ -250,9 +208,9 @@ async function renderQuestionTable() {
     ? 'Showing all questions from every admin (master admin view).'
     : 'Showing only questions you created.';
 
-  const chapter_id = document.getElementById('questionFilterChapter').value;
+  const book_id = document.getElementById('questionFilterBook').value;
   const params = new URLSearchParams({ lang: 'both', paginate: 'true', page: questionsPage, pageSize: QUESTIONS_PAGE_SIZE });
-  if (chapter_id) params.set('chapter_id', chapter_id);
+  if (book_id) params.set('book_id', book_id);
   if (currentUser.role === 'admin') params.set('scope', 'mine');
 
   const res = await api('/api/questions?' + params.toString());
@@ -262,7 +220,7 @@ async function renderQuestionTable() {
   payload.items.forEach(q => {
     const tr = document.createElement('tr');
     const preview = (q.question.text || '').slice(0, 80);
-    tr.innerHTML = `<td>${escapeHtml(preview)}</td><td>${escapeHtml(q.chapter_name || '')}</td><td>
+    tr.innerHTML = `<td>${escapeHtml(preview)}</td><td>${escapeHtml(q.book_name || '')}</td><td>
       <button onclick="editQuestion(${q.id})">Edit</button>
       <button onclick="deleteQuestion(${q.id})">Delete</button></td>`;
     tbody.appendChild(tr);
@@ -279,7 +237,7 @@ document.getElementById('questionForm').addEventListener('submit', async (e) => 
   e.preventDefault();
   const id = document.getElementById('questionId').value;
   const fd = new FormData();
-  fd.append('chapter_id', document.getElementById('questionChapterSelect').value);
+  fd.append('book_id', document.getElementById('questionBookSelect').value);
   fd.append('question_en', document.getElementById('question_en').value);
   fd.append('question_gu', document.getElementById('question_gu').value);
   ['1', '2', '3', '4'].forEach(n => {
@@ -310,7 +268,7 @@ window.editQuestion = async (id) => {
   if (!res.ok) { alert(res.data && res.data.error ? res.data.error : 'Could not open this question'); return; }
   const q = res.data;
   document.getElementById('questionId').value = q.id;
-  document.getElementById('questionChapterSelect').value = q.chapter_id;
+  document.getElementById('questionBookSelect').value = q.book_id;
   document.getElementById('question_en').value = q.question.en;
   document.getElementById('question_gu').value = q.question.gu;
   q.options.forEach((opt, i) => {
@@ -346,7 +304,7 @@ async function renderSuggestionTable() {
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${escapeHtml(s.question_preview)}</td>
-      <td>${escapeHtml(s.chapter_name || '')}</td>
+      <td>${escapeHtml(s.book_name || '')}</td>
       <td>${escapeHtml(s.username)}</td>
       <td>${escapeHtml(s.suggestion_text)}</td>
       <td class="status-${s.status}">${s.status}</td>
@@ -378,7 +336,9 @@ function wireSuggestionsPagination() {
 
 // ---------- USERS ----------
 async function renderUserTable() {
-  const res = await api(`/api/users?page=${usersPage}&pageSize=10`);
+  const params = new URLSearchParams({ page: String(usersPage), pageSize: '10' });
+  if (usersSearch) params.set('q', usersSearch);
+  const res = await api('/api/users?' + params.toString());
   const tbody = document.querySelector('#userTable tbody');
   tbody.innerHTML = '';
   (res.data.items || []).forEach(u => {
@@ -390,6 +350,10 @@ async function renderUserTable() {
            <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>admin</option>
          </select>`
       : escapeHtml(u.role);
+    let trialCell = '—';
+    if (u.role === 'user') {
+      trialCell = u.unlimitedAccess ? 'Unlimited' : (u.trialRestricted ? '<span class="status-pending">Restricted (50 Qs)</span>' : 'In 24h trial');
+    }
     tr.innerHTML = `
       <td>${escapeHtml(u.name)}</td>
       <td>${escapeHtml(u.username)}</td>
@@ -397,8 +361,12 @@ async function renderUserTable() {
       <td>${escapeHtml(u.email || '')}</td>
       <td>${roleCell}</td>
       <td class="${blocked ? 'badge-blocked' : 'badge-active'}">${blocked ? 'Blocked' : 'Active'}</td>
+      <td>${trialCell}</td>
+      <td>${formatDate(u.createdAt)}</td>
       <td>
         ${u.role === 'master_admin' ? '' : `<button onclick="toggleBlock(${u.id}, ${!blocked})">${blocked ? 'Grant access' : 'Block'}</button>`}
+        ${u.role === 'user' && !u.unlimitedAccess ? `<button onclick="grantUnlimited(${u.id})">Grant unlimited</button>` : ''}
+        ${u.role === 'user' && u.unlimitedAccess ? `<button onclick="revokeUnlimited(${u.id})">Revoke unlimited</button>` : ''}
         <button onclick="openResetPassword(${u.id}, '${escapeHtml(u.username)}')">Reset password</button>
       </td>`;
     tbody.appendChild(tr);
@@ -410,7 +378,21 @@ async function renderUserTable() {
 function wireUsersPagination() {
   document.getElementById('usersPrevPage').addEventListener('click', () => { if (usersPage > 1) { usersPage--; renderUserTable(); } });
   document.getElementById('usersNextPage').addEventListener('click', () => { usersPage++; renderUserTable(); });
+  let searchTimeout;
+  document.getElementById('usersSearchInput').addEventListener('input', (e) => {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => { usersSearch = e.target.value.trim(); usersPage = 1; renderUserTable(); }, 300);
+  });
 }
+window.grantUnlimited = async (id) => {
+  await api(`/api/users/${id}/unlimited-access`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ unlimitedAccess: true }) });
+  await renderUserTable();
+};
+window.revokeUnlimited = async (id) => {
+  if (!confirm('Revoke unlimited access? They will go back to the 24h/50-question trial limits.')) return;
+  await api(`/api/users/${id}/unlimited-access`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ unlimitedAccess: false }) });
+  await renderUserTable();
+};
 window.toggleBlock = async (id, shouldBlock) => {
   const res = await api(`/api/users/${id}/status`, {
     method: 'PUT', headers: { 'Content-Type': 'application/json' },
@@ -552,6 +534,101 @@ function wireMaterialsAdmin() {
     clearTimeout(searchTimeout);
     searchTimeout = setTimeout(() => { materialsAdminSearch = e.target.value.trim(); materialsAdminPage = 1; renderMaterialTable(); }, 300);
   });
+}
+
+// ---------- CHANGE PASSWORD (admin/master admin) ----------
+function wireAdminChangePassword() {
+  document.getElementById('adminChangePasswordForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const msg = document.getElementById('adminPwMsg');
+    msg.textContent = '';
+    const currentPassword = document.getElementById('adminCurrentPassword').value;
+    const newPassword = document.getElementById('adminNewPassword').value;
+    const confirmPassword = document.getElementById('adminConfirmNewPassword').value;
+    const res = await api('/api/auth/change-password', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ currentPassword, newPassword, confirmPassword })
+    });
+    if (!res.ok) { msg.textContent = (res.data && res.data.error) || 'Could not update password'; return; }
+    msg.style.color = '#2ecc71';
+    msg.textContent = 'Password updated.';
+    document.getElementById('adminChangePasswordForm').reset();
+  });
+}
+
+// ---------- USER ENGAGEMENT (master admin only) ----------
+let engagementPage = 1;
+let userSessionsPage = 1;
+let userSessionsUserId = null;
+
+function formatDuration(totalSeconds) {
+  const h = Math.floor(totalSeconds / 3600);
+  const m = Math.floor((totalSeconds % 3600) / 60);
+  const s = totalSeconds % 60;
+  if (h > 0) return `${h}h ${m}m`;
+  if (m > 0) return `${m}m ${s}s`;
+  return `${s}s`;
+}
+function formatDate(iso) {
+  return iso ? new Date(iso).toLocaleString() : '—';
+}
+
+async function renderEngagementTable() {
+  const res = await api(`/api/users/engagement?page=${engagementPage}&pageSize=10`);
+  if (!res.ok) return;
+  const tbody = document.querySelector('#engagementTable tbody');
+  tbody.innerHTML = '';
+  res.data.items.forEach(u => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${escapeHtml(u.name)}</td>
+      <td>${escapeHtml(u.username)}</td>
+      <td>${escapeHtml(u.role)}</td>
+      <td>${u.totalSessions}</td>
+      <td>${formatDuration(u.totalSeconds)}</td>
+      <td>${formatDate(u.lastLoginAt)}</td>
+      <td class="${u.online ? 'badge-active' : ''}">${u.online ? 'Online now' : ''}</td>
+      <td><button onclick="viewUserSessions(${u.id}, '${escapeHtml(u.name)}')">View sessions</button></td>`;
+    tbody.appendChild(tr);
+  });
+  document.getElementById('engagementPageInfo').textContent = `Page ${res.data.page} of ${res.data.totalPages} (${res.data.total} user${res.data.total === 1 ? '' : 's'})`;
+  document.getElementById('engagementPrevPage').disabled = res.data.page <= 1;
+  document.getElementById('engagementNextPage').disabled = res.data.page >= res.data.totalPages;
+}
+
+window.viewUserSessions = async (userId, name) => {
+  userSessionsUserId = userId;
+  userSessionsPage = 1;
+  document.getElementById('userSessionsName').textContent = name;
+  document.getElementById('userSessionsBox').classList.remove('hidden');
+  await renderUserSessionsTable();
+};
+
+async function renderUserSessionsTable() {
+  const res = await api(`/api/users/${userSessionsUserId}/sessions?page=${userSessionsPage}&pageSize=10`);
+  if (!res.ok) return;
+  const tbody = document.querySelector('#userSessionsTable tbody');
+  tbody.innerHTML = '';
+  res.data.items.forEach(s => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${formatDate(s.login_at)}</td>
+      <td>${s.logout_at ? formatDate(s.logout_at) : '—'}</td>
+      <td>${formatDuration(s.duration_seconds)}</td>
+      <td>${s.currently_online ? 'Online now' : (s.logout_at ? 'Logged out' : 'Not active')}</td>`;
+    tbody.appendChild(tr);
+  });
+  document.getElementById('userSessionsPageInfo').textContent = `Page ${res.data.page} of ${res.data.totalPages} (${res.data.total} session${res.data.total === 1 ? '' : 's'})`;
+  document.getElementById('userSessionsPrevPage').disabled = res.data.page <= 1;
+  document.getElementById('userSessionsNextPage').disabled = res.data.page >= res.data.totalPages;
+}
+
+function wireEngagement() {
+  document.getElementById('engagementPrevPage').addEventListener('click', () => { if (engagementPage > 1) { engagementPage--; renderEngagementTable(); } });
+  document.getElementById('engagementNextPage').addEventListener('click', () => { engagementPage++; renderEngagementTable(); });
+  document.getElementById('userSessionsPrevPage').addEventListener('click', () => { if (userSessionsPage > 1) { userSessionsPage--; renderUserSessionsTable(); } });
+  document.getElementById('userSessionsNextPage').addEventListener('click', () => { userSessionsPage++; renderUserSessionsTable(); });
+  document.querySelector('.tab-btn[data-tab="engagement"]').addEventListener('click', renderEngagementTable);
 }
 
 function escapeHtml(s) {

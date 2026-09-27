@@ -4,6 +4,7 @@ const crypto = require('crypto');
 const prisma = require('../lib/prisma');
 const { requireAuth } = require('../middleware/auth');
 const { sendMail } = require('../lib/mailer');
+const { isTrialRestricted, TRIAL_PRACTICE_LIMIT } = require('../lib/trial');
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -13,6 +14,7 @@ router.post('/register', async (req, res, next) => {
 
     if (!name || !name.trim()) return res.status(400).json({ error: 'Name is required' });
     if (!username || !username.trim()) return res.status(400).json({ error: 'Username is required' });
+    if (!mobile || !mobile.trim()) return res.status(400).json({ error: 'Mobile number is required' }); 
     if (!email || !EMAIL_RE.test(email.trim())) {
       return res.status(400).json({ error: 'A valid email is required (used to recover your username/password later)' });
     }
@@ -38,6 +40,8 @@ router.post('/register', async (req, res, next) => {
     });
 
     req.session.user = { id: user.id, username: user.username, name: user.name, role: user.role };
+    const sessionRecord = await prisma.userSession.create({ data: { userId: user.id } });
+    req.session.sessionRecordId = sessionRecord.id;
     res.json({ user: req.session.user });
   } catch (err) { next(err); }
 });
@@ -53,17 +57,41 @@ router.post('/login', async (req, res, next) => {
       return res.status(403).json({ error: 'Your account has been blocked. Contact an admin.' });
     }
     req.session.user = { id: user.id, username: user.username, name: user.name, role: user.role };
+
+    const sessionRecord = await prisma.userSession.create({ data: { userId: user.id } });
+    req.session.sessionRecordId = sessionRecord.id;
+
     res.json({ user: req.session.user });
   } catch (err) { next(err); }
 });
 
-router.post('/logout', (req, res) => {
+router.post('/logout', async (req, res) => {
+  if (req.session.sessionRecordId) {
+    await prisma.userSession.update({
+      where: { id: req.session.sessionRecordId },
+      data: { logoutAt: new Date(), lastActiveAt: new Date() }
+    }).catch(() => {}); // best-effort - don't block logout if this fails
+  }
   req.session.destroy(() => res.json({ ok: true }));
 });
 
-router.get('/me', (req, res) => {
-  if (!req.session.user) return res.status(401).json({ error: 'Not logged in' });
-  res.json({ user: req.session.user });
+router.get('/me', async (req, res, next) => {
+  try {
+    if (!req.session.user) return res.status(401).json({ error: 'Not logged in' });
+    const user = await prisma.user.findUnique({ where: { id: req.session.user.id } });
+    if (!user) return res.status(401).json({ error: 'Not logged in' });
+
+    const restricted = isTrialRestricted(user);
+    let practiceUsed = null;
+    if (restricted) {
+      practiceUsed = await prisma.practiceAttempt.count({ where: { userId: user.id } });
+    }
+
+    res.json({
+      user: req.session.user,
+      trial: { restricted, limit: TRIAL_PRACTICE_LIMIT, used: practiceUsed }
+    });
+  } catch (err) { next(err); }
 });
 
 // Logged-in user changes their own password (requires current password)
@@ -130,7 +158,7 @@ router.put('/profile', requireAuth, async (req, res, next) => {
     const { name, mobile, email } = req.body;
     if (!name || !name.trim()) return res.status(400).json({ error: 'Name is required' });
     if (!email || !EMAIL_RE.test(email.trim())) return res.status(400).json({ error: 'A valid email is required' });
-
+    if (!mobile || !mobile.trim()) return res.status(400).json({ error: 'Mobile number is required' });   
     const existingEmail = await prisma.user.findFirst({
       where: { email: email.trim(), NOT: { id: req.session.user.id } }
     });
@@ -138,7 +166,7 @@ router.put('/profile', requireAuth, async (req, res, next) => {
 
     const updated = await prisma.user.update({
       where: { id: req.session.user.id },
-      data: { name: name.trim(), mobile: mobile ? mobile.trim() : null, email: email.trim() }
+      data: { name: name.trim(), mobile: mobile.trim(), email: email.trim() }
     });
 
     req.session.user.name = updated.name;

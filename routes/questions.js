@@ -77,8 +77,8 @@ function shuffle(arr) {
 function toDisplayQuestion(r, lang) {
   return {
     id: r.id,
-    chapter_id: r.chapterId,
-    chapter_name: r.chapter ? r.chapter.name : undefined,
+    book_id: r.bookId,
+    book_name: r.book ? r.book.name : undefined,
     created_by: r.createdById,
     question: displayField(r.questionText, lang),
     options: [r.option1, r.option2, r.option3, r.option4].map(o => displayField(o, lang)),
@@ -89,17 +89,20 @@ function toDisplayQuestion(r, lang) {
   };
 }
 
-// GET /api/questions?paper_id=&book_id=&chapter_id=&lang=both|en|gu
+// GET /api/questions?book_id=&book_ids=1,2,3&lang=both|en|gu
 //    &scope=mine (admin management view: regular admins see only their own; master admin always sees all)
 //    &paginate=true&page=1&pageSize=10 (admin table pagination; quiz-taking omits this and gets a plain array)
+// book_ids (comma-separated) is what Practice MCQ uses now that users pick multiple books directly.
 router.get('/', requireAuth, async (req, res, next) => {
   try {
-    const { chapter_id, book_id, paper_id, lang = 'both', scope, paginate, page = '1', pageSize = '10' } = req.query;
+    const { book_id, book_ids, lang = 'both', scope, paginate, page = '1', pageSize = '10' } = req.query;
 
     const where = {};
-    if (chapter_id) where.chapterId = parseInt(chapter_id, 10);
-    if (book_id) where.chapter = { bookId: parseInt(book_id, 10) };
-    if (paper_id) where.chapter = { book: { papers: { some: { paperId: parseInt(paper_id, 10) } } } };
+    if (book_id) where.bookId = parseInt(book_id, 10);
+    if (book_ids) {
+      const ids = book_ids.split(',').map(s => parseInt(s, 10)).filter(Boolean);
+      if (ids.length) where.bookId = { in: ids };
+    }
 
     if (scope === 'mine' && req.session.user.role === 'admin') {
       where.createdById = req.session.user.id;
@@ -113,7 +116,7 @@ router.get('/', requireAuth, async (req, res, next) => {
         prisma.question.count({ where }),
         prisma.question.findMany({
           where,
-          include: { chapter: true },
+          include: { book: true },
           orderBy: { id: 'asc' },
           skip: (pageNum - 1) * size,
           take: size
@@ -130,7 +133,7 @@ router.get('/', requireAuth, async (req, res, next) => {
 
     // Practice-quiz endpoint (not the admin table): shuffle question order every time,
     // so the same selection doesn't always start with the same question.
-    const rows = await prisma.question.findMany({ where, include: { chapter: true }, orderBy: { id: 'asc' } });
+    const rows = await prisma.question.findMany({ where, include: { book: true }, orderBy: { id: 'asc' } });
     res.json(shuffle(rows).map(r => toDisplayQuestion(r, lang)));
   } catch (err) { next(err); }
 });
@@ -145,7 +148,7 @@ router.get('/:id/raw', requireAdmin, async (req, res, next) => {
     }
     res.json({
       id: r.id,
-      chapter_id: r.chapterId,
+      book_id: r.bookId,
       question: split(r.questionText),
       options: [r.option1, r.option2, r.option3, r.option4].map(split),
       correct_option: r.correctOption,
@@ -165,8 +168,8 @@ router.post('/', requireAdmin, upload.single('attachment'), async (req, res, nex
     const option4 = combine(b.opt4_en, b.opt4_gu);
     const explanation = combine(b.explanation_en, b.explanation_gu);
 
-    if (!questionText || !option1 || !option2 || !option3 || !option4 || !b.chapter_id || !b.correct_option) {
-      return res.status(400).json({ error: 'Question, all 4 options, chapter and correct option are required' });
+    if (!questionText || !option1 || !option2 || !option3 || !option4 || !b.book_id || !b.correct_option) {
+      return res.status(400).json({ error: 'Question, all 4 options, book and correct option are required' });
     }
 
     const attachmentPath = req.file ? req.file.path : null;
@@ -174,7 +177,7 @@ router.post('/', requireAdmin, upload.single('attachment'), async (req, res, nex
 
     const question = await prisma.question.create({
       data: {
-        chapterId: parseInt(b.chapter_id, 10),
+        bookId: parseInt(b.book_id, 10),
         questionText, option1, option2, option3, option4,
         correctOption: parseInt(b.correct_option, 10),
         explanation,
@@ -209,7 +212,7 @@ router.put('/:id', requireAdmin, upload.single('attachment'), async (req, res, n
     await prisma.question.update({
       where: { id },
       data: {
-        chapterId: parseInt(b.chapter_id, 10),
+        bookId: parseInt(b.book_id, 10),
         questionText, option1, option2, option3, option4,
         correctOption: parseInt(b.correct_option, 10),
         explanation, attachmentPath, attachmentType
@@ -232,17 +235,17 @@ router.delete('/:id', requireAdmin, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-// GET /api/questions/export?chapter_id=  -> downloads an .xlsx of matching questions.
+// GET /api/questions/export?book_id=  -> downloads an .xlsx of matching questions.
 // Regular admins only ever export questions they created; master admin exports everything (or the filtered subset).
 router.get('/export', requireAdmin, async (req, res, next) => {
   try {
     const where = {};
-    if (req.query.chapter_id) where.chapterId = parseInt(req.query.chapter_id, 10);
+    if (req.query.book_id) where.bookId = parseInt(req.query.book_id, 10);
     if (req.session.user.role === 'admin') where.createdById = req.session.user.id;
 
     const questions = await prisma.question.findMany({
       where,
-      include: { chapter: { include: { book: true } } },
+      include: { book: true },
       orderBy: { id: 'asc' }
     });
 
@@ -251,8 +254,7 @@ router.get('/export', requireAdmin, async (req, res, next) => {
       const opts = [q.option1, q.option2, q.option3, q.option4].map(split);
       const ex = split(q.explanation);
       return {
-        'Book Name': q.chapter.book.name,
-        'Chapter Name': q.chapter.name,
+        'Book Name': q.book.name,
         'Question EN': qs.en, 'Question GU': qs.gu,
         'Option1 EN': opts[0].en, 'Option1 GU': opts[0].gu,
         'Option2 EN': opts[1].en, 'Option2 GU': opts[1].gu,
@@ -274,13 +276,11 @@ router.get('/export', requireAdmin, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-// GET /api/questions/import-template -> a blank .xlsx with the right headers plus one example row,
-// so an admin can fill it in correctly without guessing the column names.
+// GET /api/questions/import-template -> a blank .xlsx with the right headers plus one example row.
 router.get('/import-template', requireAdmin, async (req, res, next) => {
   try {
     const sample = [{
       'Book Name': '(exact existing book name)',
-      'Chapter Name': '(exact existing chapter name, inside that book)',
       'Question EN': 'What is 2 + 2?', 'Question GU': '',
       'Option1 EN': '3', 'Option1 GU': '',
       'Option2 EN': '4', 'Option2 GU': '',
@@ -301,8 +301,8 @@ router.get('/import-template', requireAdmin, async (req, res, next) => {
 });
 
 // POST /api/questions/import - multipart field "file" holding an .xlsx built like the template above.
-// Every row becomes a NEW question (this does not update existing ones). Book/Chapter must already
-// exist and are matched by name (case-insensitive) - rows that don't match are skipped and reported.
+// Every row becomes a NEW question (this does not update existing ones). The book must already
+// exist and is matched by name (case-insensitive) - rows that don't match are skipped and reported.
 router.post('/import', requireAdmin, importUpload.single('file'), async (req, res, next) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'Upload an .xlsx file as "file"' });
@@ -311,23 +311,17 @@ router.post('/import', requireAdmin, importUpload.single('file'), async (req, re
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
     const rows = XLSX.utils.sheet_to_json(sheet, { defval: '' });
 
-    const [allBooks, allChapters] = await Promise.all([
-      prisma.book.findMany(),
-      prisma.chapter.findMany()
-    ]);
+    const allBooks = await prisma.book.findMany();
 
     const results = { created: 0, errors: [] };
     for (let i = 0; i < rows.length; i++) {
       const r = rows[i];
       const rowNum = i + 2; // header is row 1
       const bookName = String(r['Book Name'] || '').trim();
-      const chapterName = String(r['Chapter Name'] || '').trim();
-      if (!bookName || !chapterName) { results.errors.push(`Row ${rowNum}: missing Book Name or Chapter Name`); continue; }
+      if (!bookName) { results.errors.push(`Row ${rowNum}: missing Book Name`); continue; }
 
       const book = allBooks.find(b => b.name.toLowerCase() === bookName.toLowerCase());
       if (!book) { results.errors.push(`Row ${rowNum}: book "${bookName}" not found`); continue; }
-      const chapter = allChapters.find(c => c.bookId === book.id && c.name.toLowerCase() === chapterName.toLowerCase());
-      if (!chapter) { results.errors.push(`Row ${rowNum}: chapter "${chapterName}" not found in book "${bookName}"`); continue; }
 
       const questionText = combine(r['Question EN'], r['Question GU']);
       const option1 = combine(r['Option1 EN'], r['Option1 GU']);
@@ -344,7 +338,7 @@ router.post('/import', requireAdmin, importUpload.single('file'), async (req, re
 
       await prisma.question.create({
         data: {
-          chapterId: chapter.id, questionText, option1, option2, option3, option4,
+          bookId: book.id, questionText, option1, option2, option3, option4,
           correctOption, explanation, createdById: req.session.user.id
         }
       });

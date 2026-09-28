@@ -7,6 +7,11 @@ const forgotToggle = document.getElementById('forgotToggle');
 const title = document.getElementById('formTitle');
 const intro = document.getElementById('authIntro');
 const msg = document.getElementById('msg');
+const registrationMobile = document.getElementById('regMobile');
+
+registrationMobile.addEventListener('input', () => {
+  registrationMobile.value = registrationMobile.value.replace(/\D/g, '').slice(0, 10);
+});
 
 function showMode(newMode) {
   mode = newMode;
@@ -59,6 +64,7 @@ loginForm.addEventListener('submit', async (e) => {
 
 registerForm.addEventListener('submit', async (e) => {
   e.preventDefault();
+  if (!registerForm.reportValidity()) return;
   msg.textContent = '';
   const body = {
     name: document.getElementById('regName').value.trim(),

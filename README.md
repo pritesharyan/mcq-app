@@ -65,6 +65,14 @@ crawlers, and add the publisher-specific `ads.txt` entry only after Google
 provides the publisher ID. Approval is determined by Google and cannot be
 guaranteed by deployment configuration.
 
+## Android app wrapper
+
+The `android-app/` directory contains a lightweight WebView wrapper that
+opens the deployed site directly on the login page. Set the final HTTPS Render
+URL in `android-app/app/src/main/res/values/strings.xml`, then open the
+directory in Android Studio. Build a signed Android App Bundle (`.aab`) for
+Google Play; see `android-app/README.md` for the release steps.
+
 ## Database backups
 
 The server keeps consistent SQLite snapshots in the project-root `backups/` folder. It creates an automatic backup at startup when no automatic backup exists or the latest one is at least 24 hours old, then schedules the next backup 24 hours later. Master admins can create and download manual or automatic snapshots from Admin > Backups. Backup files stay on the same server, so download important copies to separate storage.

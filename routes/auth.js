@@ -14,7 +14,9 @@ router.post('/register', async (req, res, next) => {
 
     if (!name || !name.trim()) return res.status(400).json({ error: 'Name is required' });
     if (!username || !username.trim()) return res.status(400).json({ error: 'Username is required' });
-    if (!mobile || !mobile.trim()) return res.status(400).json({ error: 'Mobile number is required' }); 
+    if (!mobile || !/^[0-9]{10}$/.test(mobile.trim())) {
+      return res.status(400).json({ error: 'Mobile number must contain exactly 10 digits' });
+    }
     if (!email || !EMAIL_RE.test(email.trim())) {
       return res.status(400).json({ error: 'A valid email is required (used to recover your username/password later)' });
     }

@@ -461,8 +461,8 @@ function testGo(dir) {
 }
 
 async function submitTest(auto) {
-  if (testState.timerInterval) clearInterval(testState.timerInterval);
   if (!auto && !confirm('Submit the test now?')) return;
+  if (testState.timerInterval) clearInterval(testState.timerInterval);
 
   let correct = 0, wrong = 0, unattempted = 0;
   testState.questions.forEach(q => {

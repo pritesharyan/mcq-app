@@ -43,6 +43,7 @@ async function init() {
 
   if (currentUser.role !== 'master_admin') {
     document.getElementById('materialForm').classList.add('hidden');
+    document.getElementById('materialsImportExport').classList.add('hidden');
     document.getElementById('engagementTabBtn').classList.add('hidden');
     document.getElementById('backupsTabBtn').classList.add('hidden');
   }
@@ -532,6 +533,34 @@ window.deleteMaterial = async (id) => {
   await renderMaterialTable();
 };
 function wireMaterialsAdmin() {
+  document.getElementById('exportMaterialsBtn').addEventListener('click', () => {
+    window.location.href = '/api/exam-materials/export';
+  });
+  document.getElementById('downloadMaterialsTemplateBtn').addEventListener('click', () => {
+    window.location.href = '/api/exam-materials/import-template';
+  });
+  document.getElementById('importMaterialsFileInput').addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const formData = new FormData();
+    formData.append('file', file);
+    const msgBox = document.getElementById('materialsImportResultMsg');
+    msgBox.classList.remove('hidden');
+    msgBox.textContent = 'Importing...';
+
+    const response = await fetch('/api/exam-materials/import', { method: 'POST', body: formData });
+    const data = await response.json().catch(() => ({}));
+    e.target.value = '';
+    if (!response.ok) { msgBox.textContent = data.error || 'Import failed'; return; }
+
+    let message = `Added ${data.created} material(s).`;
+    if (data.errors && data.errors.length) {
+      message += ` ${data.errors.length} row(s) skipped: ${data.errors.slice(0, 5).join(' | ')}${data.errors.length > 5 ? ' ...' : ''}`;
+    }
+    msgBox.textContent = message;
+    materialsAdminPage = 1;
+    await renderMaterialTable();
+  });
   document.getElementById('materialsAdminPrevPage').addEventListener('click', () => { if (materialsAdminPage > 1) { materialsAdminPage--; renderMaterialTable(); } });
   document.getElementById('materialsAdminNextPage').addEventListener('click', () => { materialsAdminPage++; renderMaterialTable(); });
   let searchTimeout;

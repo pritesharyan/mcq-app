@@ -174,6 +174,15 @@
 
   <section id="tab-materials" class="tab-content card hidden">
     <h3>Exam Materials</h3>
+    <div id="materialsImportExport" class="row import-export-row">
+      <button type="button" id="exportMaterialsBtn">⬇ Export to Excel</button>
+      <button type="button" id="downloadMaterialsTemplateBtn" class="secondary-btn">Download import template</button>
+      <label class="import-file-label">
+        ⬆ Import from Excel
+        <input type="file" id="importMaterialsFileInput" accept=".xlsx,.xls" class="hidden">
+      </label>
+    </div>
+    <p id="materialsImportResultMsg" class="hidden"></p>
     <form id="materialForm">
       <input type="hidden" id="materialId">
       <label>Paper (optional)</label>

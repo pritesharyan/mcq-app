@@ -70,17 +70,14 @@
       <label>Book</label>
       <select id="questionBookSelect" required></select>
 
-      <label>Question (English)</label>
-      <textarea id="question_en"></textarea>
-      <label>Question (Gujarati)</label>
-      <textarea id="question_gu"></textarea>
-      <p style="font-size:12px;color:#888">Leave one blank to save a single-language question. At least one is required.</p>
+      <label>Question (English or Gujarati)</label>
+      <textarea id="question"></textarea>
 
       <div class="option-grid">
-        <div><label>Option 1 - English</label><input id="opt1_en"><label>Option 1 - Gujarati</label><input id="opt1_gu"></div>
-        <div><label>Option 2 - English</label><input id="opt2_en"><label>Option 2 - Gujarati</label><input id="opt2_gu"></div>
-        <div><label>Option 3 - English</label><input id="opt3_en"><label>Option 3 - Gujarati</label><input id="opt3_gu"></div>
-        <div><label>Option 4 - English</label><input id="opt4_en"><label>Option 4 - Gujarati</label><input id="opt4_gu"></div>
+        <div><label>Option 1</label><input id="option1"></div>
+        <div><label>Option 2</label><input id="option2"></div>
+        <div><label>Option 3</label><input id="option3"></div>
+        <div><label>Option 4</label><input id="option4"></div>
       </div>
 
       <label>Correct option</label>
@@ -89,10 +86,8 @@
         <option value="3">Option 3</option><option value="4">Option 4</option>
       </select>
 
-      <label>Explanation (English)</label>
-      <textarea id="explanation_en"></textarea>
-      <label>Explanation (Gujarati)</label>
-      <textarea id="explanation_gu"></textarea>
+      <label>Explanation (English or Gujarati)</label>
+      <textarea id="explanation"></textarea>
 
       <label>Attachment (image or PDF reference / solution)</label>
       <input type="file" id="attachment" accept="image/*,application/pdf">

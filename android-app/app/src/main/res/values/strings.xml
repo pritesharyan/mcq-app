@@ -1,5 +1,5 @@
 <resources>
     <string name="app_name">HGP ITI</string>
     <!-- Replace this with the final HTTPS Render URL before building. -->
-    <string name="web_app_url">https://mcq-app-jyzt.onrender.com/login.html</string>
+    <string name="web_app_url">https://highergradepayiti.duckdns.org/</string>
 </resources>

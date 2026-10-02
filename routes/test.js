@@ -4,24 +4,15 @@ const prisma = require('../lib/prisma');
 const { requireAuth } = require('../middleware/auth');
 const { isTrialRestricted } = require('../lib/trial');
 
-function split(stored) {
-  if (!stored) return { en: '', gu: '', hasEn: false, hasGu: false };
-  const parts = stored.split('//');
-  if (parts.length >= 2) {
-    return { en: parts[0], gu: parts.slice(1).join('//'), hasEn: !!parts[0], hasGu: !!parts.slice(1).join('//') };
-  }
-  return { en: parts[0], gu: '', hasEn: !!parts[0], hasGu: false };
+function singleLanguage(value) {
+  const text = String(value ?? '').trim();
+  if (!text.includes('//')) return text;
+  const [english, ...gujarati] = text.split('//');
+  return english.trim() || gujarati.join('//').trim();
 }
 
-function displayField(stored, lang) {
-  const s = split(stored);
-  if (!s.hasEn && !s.hasGu) return { text: '', lang: null };
-  if (s.hasEn && s.hasGu) {
-    if (lang === 'en') return { text: s.en, lang: 'en' };
-    if (lang === 'gu') return { text: s.gu, lang: 'gu' };
-    return { text: `EN: ${s.en}\nGU: ${s.gu}`, lang: 'both', en: s.en, gu: s.gu };
-  }
-  return { text: s.hasEn ? s.en : s.gu, lang: s.hasEn ? 'en' : 'gu', fallback: true };
+function displayField(stored) {
+  return { text: singleLanguage(stored) };
 }
 
 function shuffle(arr) {
@@ -33,12 +24,12 @@ function shuffle(arr) {
   return a;
 }
 
-// GET /api/test?book_ids=1,2,3&count=25&lang=both
+// GET /api/test?book_ids=1,2,3&count=25
 // Pulls every question across the selected books, shuffles, and
 // returns up to `count` of them in random order - the "Take a Test" pool.
 router.get('/', requireAuth, async (req, res, next) => {
   try {
-    const { book_ids, count = '25', lang = 'both' } = req.query;
+    const { book_ids, count = '25' } = req.query;
     if (!book_ids) return res.status(400).json({ error: 'book_ids is required (comma-separated)' });
     const bookIds = book_ids.split(',').map(id => parseInt(id, 10)).filter(Boolean);
     if (!bookIds.length) return res.status(400).json({ error: 'No valid book_ids provided' });
@@ -55,10 +46,10 @@ router.get('/', requireAuth, async (req, res, next) => {
       id: r.id,
       book_id: r.bookId,
       book_name: r.book.name,
-      question: displayField(r.questionText, lang),
-      options: [r.option1, r.option2, r.option3, r.option4].map(o => displayField(o, lang)),
+      question: displayField(r.questionText),
+      options: [r.option1, r.option2, r.option3, r.option4].map(displayField),
       correct_option: r.correctOption,
-      explanation: displayField(r.explanation, lang),
+      explanation: displayField(r.explanation),
       attachment_url: r.attachmentPath ? `/uploads/${path.basename(r.attachmentPath)}` : null,
       attachment_type: r.attachmentType
     }));
@@ -162,12 +153,12 @@ router.get('/attempts/:id', requireAuth, async (req, res, next) => {
     const items = graded.map(g => {
       const q = byId.get(parseInt(g.questionId, 10));
       return {
-        question: q ? displayField(q.questionText, 'both') : { text: '(question was deleted)' },
-        options: q ? [q.option1, q.option2, q.option3, q.option4].map(o => displayField(o, 'both')) : [],
+        question: q ? displayField(q.questionText) : { text: '(question was deleted)' },
+        options: q ? [q.option1, q.option2, q.option3, q.option4].map(displayField) : [],
         chosen_option: g.chosenOption,
         correct_option: g.correctOption,
         is_correct: g.isCorrect,
-        explanation: q ? displayField(q.explanation, 'both') : { text: '' }
+        explanation: q ? displayField(q.explanation) : { text: '' }
       };
     });
 

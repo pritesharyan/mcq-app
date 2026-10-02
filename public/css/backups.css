@@ -10,6 +10,10 @@
 .backup-type-manual { background: #fff0d2; color: #795620; }
 #backupTable td:nth-child(4) { overflow-wrap: anywhere; font-family: Consolas, monospace; font-size: 12px; }
 #backupTable a { color: #237da1; font-weight: 700; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+.backup-delete-btn { margin-left: 10px; padding: 6px 10px; border: 1px solid #d9a5a5; border-radius: 4px; background: #fff2f2; color: #963838; font: inherit; font-weight: 700; cursor: pointer; }
+.backup-delete-btn:hover:not(:disabled) { border-color: #b84b4b; background: #fce3e3; }
+.backup-delete-btn:focus-visible { outline: 2px solid #963838; outline-offset: 2px; }
+.backup-delete-btn:disabled { opacity: 0.6; cursor: wait; }
 .backup-note { margin-top: 16px; font-size: 12px; }
 .engagement-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .engagement-heading h3 { margin: 0; }

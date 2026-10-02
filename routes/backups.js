@@ -30,4 +30,16 @@ router.get('/:filename/download', requireMasterAdmin, async (req, res, next) => 
   }
 });
 
+router.delete('/:filename', requireMasterAdmin, async (req, res, next) => {
+  try {
+    const backupPath = getBackupPath(req.params.filename);
+    if (!backupPath) return res.status(400).json({ error: 'Invalid backup filename' });
+    await fs.unlink(backupPath);
+    res.json({ success: true });
+  } catch (error) {
+    if (error.code === 'ENOENT') return res.status(404).json({ error: 'Backup not found' });
+    next(error);
+  }
+});
+
 module.exports = router;

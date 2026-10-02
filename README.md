@@ -108,15 +108,13 @@ is automatically `master_admin`. There's currently no UI to promote someone
 to `master_admin` directly — that's an intentional narrow point of control;
 do it via Prisma Studio (`npm run studio`) if you ever need a second one.
 
-## How the bilingual `//` format works
+## Questions and language
 
-Unchanged from before, just relabeled: questions/options/explanation are
-stored as `"English//Gujarati"` in one field. The admin form gives two
-separate boxes (English / Gujarati) and the server joins them with `//` on
-save (`combine()` in `routes/questions.js`); if only one language was typed,
-no `//` is added. On the way out, `displayField()` shows both, just one
-language, or — if a question only ever had one language — that language
-regardless of what the user picked.
+Each question, option, and explanation uses one text field, which may contain
+English or Gujarati. Existing records that contain both languages separated
+by `//` display and export the English text when present, otherwise Gujarati.
+Excel imports accept both the current single-column template and older
+bilingual templates.
 
 ## New in this update
 

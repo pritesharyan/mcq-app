@@ -215,7 +215,7 @@ async function renderQuestionTable() {
     : 'Showing only questions you created.';
 
   const book_id = document.getElementById('questionFilterBook').value;
-  const params = new URLSearchParams({ lang: 'both', paginate: 'true', page: questionsPage, pageSize: QUESTIONS_PAGE_SIZE });
+  const params = new URLSearchParams({ paginate: 'true', page: questionsPage, pageSize: QUESTIONS_PAGE_SIZE });
   if (book_id) params.set('book_id', book_id);
   if (currentUser.role === 'admin') params.set('scope', 'mine');
 
@@ -244,15 +244,12 @@ document.getElementById('questionForm').addEventListener('submit', async (e) => 
   const id = document.getElementById('questionId').value;
   const fd = new FormData();
   fd.append('book_id', document.getElementById('questionBookSelect').value);
-  fd.append('question_en', document.getElementById('question_en').value);
-  fd.append('question_gu', document.getElementById('question_gu').value);
+  fd.append('question', document.getElementById('question').value);
   ['1', '2', '3', '4'].forEach(n => {
-    fd.append(`opt${n}_en`, document.getElementById(`opt${n}_en`).value);
-    fd.append(`opt${n}_gu`, document.getElementById(`opt${n}_gu`).value);
+    fd.append(`option${n}`, document.getElementById(`option${n}`).value);
   });
   fd.append('correct_option', document.getElementById('correct_option').value);
-  fd.append('explanation_en', document.getElementById('explanation_en').value);
-  fd.append('explanation_gu', document.getElementById('explanation_gu').value);
+  fd.append('explanation', document.getElementById('explanation').value);
   const file = document.getElementById('attachment').files[0];
   if (file) fd.append('attachment', file);
 
@@ -275,15 +272,12 @@ window.editQuestion = async (id) => {
   const q = res.data;
   document.getElementById('questionId').value = q.id;
   document.getElementById('questionBookSelect').value = q.book_id;
-  document.getElementById('question_en').value = q.question.en;
-  document.getElementById('question_gu').value = q.question.gu;
+  document.getElementById('question').value = q.question;
   q.options.forEach((opt, i) => {
-    document.getElementById(`opt${i + 1}_en`).value = opt.en;
-    document.getElementById(`opt${i + 1}_gu`).value = opt.gu;
+    document.getElementById(`option${i + 1}`).value = opt;
   });
   document.getElementById('correct_option').value = q.correct_option;
-  document.getElementById('explanation_en').value = q.explanation.en;
-  document.getElementById('explanation_gu').value = q.explanation.gu;
+  document.getElementById('explanation').value = q.explanation;
   const box = document.getElementById('currentAttachment');
   box.innerHTML = q.attachment_url ? `Current file: <a href="${q.attachment_url}" target="_blank">view</a>` : '';
   document.querySelector('.tab-btn[data-tab="questions"]').click();
@@ -688,6 +682,7 @@ async function renderBackupTable() {
     const action = document.createElement('td');
     const typeBadge = document.createElement('span');
     const download = document.createElement('a');
+    const remove = document.createElement('button');
 
     typeBadge.className = `backup-type backup-type-${backup.type.toLowerCase()}`;
     typeBadge.textContent = backup.type;
@@ -698,6 +693,21 @@ async function renderBackupTable() {
     download.href = `/api/backups/${encodeURIComponent(backup.filename)}/download`;
     download.textContent = 'Download';
     action.appendChild(download);
+    remove.type = 'button';
+    remove.className = 'backup-delete-btn';
+    remove.textContent = 'Delete';
+    remove.addEventListener('click', async () => {
+      if (!confirm(`Delete backup "${backup.filename}"? This cannot be undone.`)) return;
+      remove.disabled = true;
+      const result = await api(`/api/backups/${encodeURIComponent(backup.filename)}`, { method: 'DELETE' });
+      if (!result || !result.ok) {
+        document.getElementById('backupStatus').textContent = (result && result.data && result.data.error) || 'Could not delete backup.';
+        remove.disabled = false;
+        return;
+      }
+      await renderBackupTable();
+    });
+    action.appendChild(remove);
     row.append(type, created, size, filename, action);
     tbody.appendChild(row);
   });

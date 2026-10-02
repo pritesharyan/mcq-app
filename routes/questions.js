@@ -34,35 +34,20 @@ const upload = multer({
   }
 });
 
-// Combine English + Gujarati input into the single "//"-separated stored string.
-function combine(en, gu) {
-  en = (en || '').trim();
-  gu = (gu || '').trim();
-  if (en && gu) return `${en}//${gu}`;
-  return en || gu || '';
+// Older records use "English//Gujarati"; prefer English when reducing them.
+function textValue(value) {
+  return String(value ?? '').trim();
 }
 
-// Split a stored "//"-separated string back into { en, gu, hasEn, hasGu }
-function split(stored) {
-  if (!stored) return { en: '', gu: '', hasEn: false, hasGu: false };
-  const parts = stored.split('//');
-  if (parts.length >= 2) {
-    return { en: parts[0], gu: parts.slice(1).join('//'), hasEn: !!parts[0], hasGu: !!parts.slice(1).join('//') };
-  }
-  return { en: parts[0], gu: '', hasEn: !!parts[0], hasGu: false };
+function singleLanguage(value) {
+  const text = textValue(value);
+  if (!text.includes('//')) return text;
+  const [english, ...gujarati] = text.split('//');
+  return english.trim() || gujarati.join('//').trim();
 }
 
-// What to show a user, given their requested lang preference. If a question
-// only has one language stored, that language shows regardless of preference.
-function displayField(stored, lang) {
-  const s = split(stored);
-  if (!s.hasEn && !s.hasGu) return { text: '', lang: null };
-  if (s.hasEn && s.hasGu) {
-    if (lang === 'en') return { text: s.en, lang: 'en' };
-    if (lang === 'gu') return { text: s.gu, lang: 'gu' };
-    return { text: `EN: ${s.en}\nGU: ${s.gu}`, lang: 'both', en: s.en, gu: s.gu };
-  }
-  return { text: s.hasEn ? s.en : s.gu, lang: s.hasEn ? 'en' : 'gu', fallback: true };
+function displayField(stored) {
+  return { text: singleLanguage(stored) };
 }
 
 function shuffle(arr) {
@@ -74,28 +59,28 @@ function shuffle(arr) {
   return a;
 }
 
-function toDisplayQuestion(r, lang) {
+function toDisplayQuestion(r) {
   return {
     id: r.id,
     book_id: r.bookId,
     book_name: r.book ? r.book.name : undefined,
     created_by: r.createdById,
-    question: displayField(r.questionText, lang),
-    options: [r.option1, r.option2, r.option3, r.option4].map(o => displayField(o, lang)),
+    question: displayField(r.questionText),
+    options: [r.option1, r.option2, r.option3, r.option4].map(displayField),
     correct_option: r.correctOption,
-    explanation: displayField(r.explanation, lang),
+    explanation: displayField(r.explanation),
     attachment_url: r.attachmentPath ? `/uploads/${path.basename(r.attachmentPath)}` : null,
     attachment_type: r.attachmentType
   };
 }
 
-// GET /api/questions?book_id=&book_ids=1,2,3&lang=both|en|gu
+// GET /api/questions?book_id=&book_ids=1,2,3
 //    &scope=mine (admin management view: regular admins see only their own; master admin always sees all)
 //    &paginate=true&page=1&pageSize=10 (admin table pagination; quiz-taking omits this and gets a plain array)
 // book_ids (comma-separated) is what Practice MCQ uses now that users pick multiple books directly.
 router.get('/', requireAuth, async (req, res, next) => {
   try {
-    const { book_id, book_ids, lang = 'both', scope, paginate, page = '1', pageSize = '10' } = req.query;
+    const { book_id, book_ids, scope, paginate, page = '1', pageSize = '10' } = req.query;
 
     const where = {};
     if (book_id) where.bookId = parseInt(book_id, 10);
@@ -123,7 +108,7 @@ router.get('/', requireAuth, async (req, res, next) => {
         })
       ]);
       return res.json({
-        items: rows.map(r => toDisplayQuestion(r, lang)),
+        items: rows.map(r => toDisplayQuestion(r)),
         total,
         page: pageNum,
         pageSize: size,
@@ -134,11 +119,11 @@ router.get('/', requireAuth, async (req, res, next) => {
     // Practice-quiz endpoint (not the admin table): shuffle question order every time,
     // so the same selection doesn't always start with the same question.
     const rows = await prisma.question.findMany({ where, include: { book: true }, orderBy: { id: 'asc' } });
-    res.json(shuffle(rows).map(r => toDisplayQuestion(r, lang)));
+    res.json(shuffle(rows).map(r => toDisplayQuestion(r)));
   } catch (err) { next(err); }
 });
 
-// GET /api/questions/:id/raw - unsplit EN/GU fields, for the admin edit form
+// GET /api/questions/:id/raw - single-language fields for the admin edit form
 router.get('/:id/raw', requireAdmin, async (req, res, next) => {
   try {
     const r = await prisma.question.findUnique({ where: { id: parseInt(req.params.id, 10) } });
@@ -149,10 +134,10 @@ router.get('/:id/raw', requireAdmin, async (req, res, next) => {
     res.json({
       id: r.id,
       book_id: r.bookId,
-      question: split(r.questionText),
-      options: [r.option1, r.option2, r.option3, r.option4].map(split),
+      question: singleLanguage(r.questionText),
+      options: [r.option1, r.option2, r.option3, r.option4].map(singleLanguage),
       correct_option: r.correctOption,
-      explanation: split(r.explanation),
+      explanation: singleLanguage(r.explanation),
       attachment_url: r.attachmentPath ? `/uploads/${path.basename(r.attachmentPath)}` : null
     });
   } catch (err) { next(err); }
@@ -161,12 +146,12 @@ router.get('/:id/raw', requireAdmin, async (req, res, next) => {
 router.post('/', requireAdmin, upload.single('attachment'), async (req, res, next) => {
   try {
     const b = req.body;
-    const questionText = combine(b.question_en, b.question_gu);
-    const option1 = combine(b.opt1_en, b.opt1_gu);
-    const option2 = combine(b.opt2_en, b.opt2_gu);
-    const option3 = combine(b.opt3_en, b.opt3_gu);
-    const option4 = combine(b.opt4_en, b.opt4_gu);
-    const explanation = combine(b.explanation_en, b.explanation_gu);
+    const questionText = textValue(b.question);
+    const option1 = textValue(b.option1);
+    const option2 = textValue(b.option2);
+    const option3 = textValue(b.option3);
+    const option4 = textValue(b.option4);
+    const explanation = textValue(b.explanation);
 
     if (!questionText || !option1 || !option2 || !option3 || !option4 || !b.book_id || !b.correct_option) {
       return res.status(400).json({ error: 'Question, all 4 options, book and correct option are required' });
@@ -199,12 +184,12 @@ router.put('/:id', requireAdmin, upload.single('attachment'), async (req, res, n
     }
 
     const b = req.body;
-    const questionText = combine(b.question_en, b.question_gu);
-    const option1 = combine(b.opt1_en, b.opt1_gu);
-    const option2 = combine(b.opt2_en, b.opt2_gu);
-    const option3 = combine(b.opt3_en, b.opt3_gu);
-    const option4 = combine(b.opt4_en, b.opt4_gu);
-    const explanation = combine(b.explanation_en, b.explanation_gu);
+    const questionText = textValue(b.question);
+    const option1 = textValue(b.option1);
+    const option2 = textValue(b.option2);
+    const option3 = textValue(b.option3);
+    const option4 = textValue(b.option4);
+    const explanation = textValue(b.explanation);
 
     const attachmentPath = req.file ? req.file.path : existing.attachmentPath;
     const attachmentType = req.file ? (req.file.mimetype === 'application/pdf' ? 'pdf' : 'image') : existing.attachmentType;
@@ -250,18 +235,18 @@ router.get('/export', requireAdmin, async (req, res, next) => {
     });
 
     const rows = questions.map(q => {
-      const qs = split(q.questionText);
-      const opts = [q.option1, q.option2, q.option3, q.option4].map(split);
-      const ex = split(q.explanation);
+      const qs = singleLanguage(q.questionText);
+      const opts = [q.option1, q.option2, q.option3, q.option4].map(singleLanguage);
+      const ex = singleLanguage(q.explanation);
       return {
         'Book Name': q.book.name,
-        'Question EN': qs.en, 'Question GU': qs.gu,
-        'Option1 EN': opts[0].en, 'Option1 GU': opts[0].gu,
-        'Option2 EN': opts[1].en, 'Option2 GU': opts[1].gu,
-        'Option3 EN': opts[2].en, 'Option3 GU': opts[2].gu,
-        'Option4 EN': opts[3].en, 'Option4 GU': opts[3].gu,
+        'Question': qs,
+        'Option1': opts[0],
+        'Option2': opts[1],
+        'Option3': opts[2],
+        'Option4': opts[3],
         'Correct Option (1-4)': q.correctOption,
-        'Explanation EN': ex.en, 'Explanation GU': ex.gu
+        'Explanation': ex
       };
     });
 
@@ -281,13 +266,13 @@ router.get('/import-template', requireAdmin, async (req, res, next) => {
   try {
     const sample = [{
       'Book Name': '(exact existing book name)',
-      'Question EN': 'What is 2 + 2?', 'Question GU': '',
-      'Option1 EN': '3', 'Option1 GU': '',
-      'Option2 EN': '4', 'Option2 GU': '',
-      'Option3 EN': '5', 'Option3 GU': '',
-      'Option4 EN': '6', 'Option4 GU': '',
+      'Question': 'What is 2 + 2?',
+      'Option1': '3',
+      'Option2': '4',
+      'Option3': '5',
+      'Option4': '6',
       'Correct Option (1-4)': 2,
-      'Explanation EN': '2 + 2 = 4', 'Explanation GU': ''
+      'Explanation': '2 + 2 = 4'
     }];
     const sheet = XLSX.utils.json_to_sheet(sample);
     const workbook = XLSX.utils.book_new();
@@ -323,12 +308,12 @@ router.post('/import', requireAdmin, importUpload.single('file'), async (req, re
       const book = allBooks.find(b => b.name.toLowerCase() === bookName.toLowerCase());
       if (!book) { results.errors.push(`Row ${rowNum}: book "${bookName}" not found`); continue; }
 
-      const questionText = combine(r['Question EN'], r['Question GU']);
-      const option1 = combine(r['Option1 EN'], r['Option1 GU']);
-      const option2 = combine(r['Option2 EN'], r['Option2 GU']);
-      const option3 = combine(r['Option3 EN'], r['Option3 GU']);
-      const option4 = combine(r['Option4 EN'], r['Option4 GU']);
-      const explanation = combine(r['Explanation EN'], r['Explanation GU']);
+      const questionText = textValue(r.Question) || singleLanguage(`${r['Question EN'] || ''}//${r['Question GU'] || ''}`);
+      const option1 = textValue(r.Option1) || singleLanguage(`${r['Option1 EN'] || ''}//${r['Option1 GU'] || ''}`);
+      const option2 = textValue(r.Option2) || singleLanguage(`${r['Option2 EN'] || ''}//${r['Option2 GU'] || ''}`);
+      const option3 = textValue(r.Option3) || singleLanguage(`${r['Option3 EN'] || ''}//${r['Option3 GU'] || ''}`);
+      const option4 = textValue(r.Option4) || singleLanguage(`${r['Option4 EN'] || ''}//${r['Option4 GU'] || ''}`);
+      const explanation = textValue(r.Explanation) || singleLanguage(`${r['Explanation EN'] || ''}//${r['Explanation GU'] || ''}`);
       const correctOption = parseInt(r['Correct Option (1-4)'], 10);
 
       if (!questionText || !option1 || !option2 || !option3 || !option4 || ![1, 2, 3, 4].includes(correctOption)) {

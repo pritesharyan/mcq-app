@@ -67,8 +67,18 @@
 
     <form id="questionForm" enctype="multipart/form-data">
       <input type="hidden" id="questionId">
-      <label>Book</label>
-      <select id="questionBookSelect" required></select>
+      <div class="question-book-row">
+        <div class="question-book-field">
+          <label>Book</label>
+          <select id="questionBookSelect" required></select>
+        </div>
+        <div class="question-editor-nav">
+          <button type="button" id="questionFirstBtn" disabled>First</button>
+          <button type="button" id="questionPreviousBtn" disabled>Previous</button>
+          <button type="button" id="questionNextBtn" disabled>Next</button>
+          <button type="button" id="questionLastBtn" disabled>Last</button>
+        </div>
+      </div>
 
       <label>Question (English or Gujarati)</label>
       <textarea id="question"></textarea>

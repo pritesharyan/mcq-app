@@ -9,6 +9,9 @@ async function api(url, opts) {
 let papers = [], books = [];
 let currentUser = null;
 let questionsPage = 1;
+let questionTotalPages = 1;
+let questionPageItems = [];
+let questionNavIndex = -1;
 let suggestionsPage = 1;
 let usersPage = 1;
 let usersSearch = '';
@@ -221,6 +224,10 @@ async function renderQuestionTable() {
 
   const res = await api('/api/questions?' + params.toString());
   const payload = res.data || { items: [], total: 0, page: 1, totalPages: 1 };
+  questionTotalPages = payload.totalPages;
+  questionPageItems = payload.items;
+  const editingId = document.getElementById('questionId').value;
+  questionNavIndex = editingId ? questionPageItems.findIndex(q => String(q.id) === editingId) : -1;
   const tbody = document.querySelector('#questionTable tbody');
   tbody.innerHTML = '';
   payload.items.forEach(q => {
@@ -235,9 +242,68 @@ async function renderQuestionTable() {
   document.getElementById('questionsPageInfo').textContent = `Page ${payload.page} of ${payload.totalPages} (${payload.total} questions)`;
   document.getElementById('questionsPrevPage').disabled = payload.page <= 1;
   document.getElementById('questionsNextPage').disabled = payload.page >= payload.totalPages;
+  updateQuestionNavigationButtons();
 }
 document.getElementById('questionsPrevPage').addEventListener('click', () => { if (questionsPage > 1) { questionsPage--; renderQuestionTable(); } });
 document.getElementById('questionsNextPage').addEventListener('click', () => { questionsPage++; renderQuestionTable(); });
+
+function updateQuestionNavigationButtons() {
+  const hasSelection = questionNavIndex >= 0;
+  document.getElementById('questionFirstBtn').disabled = !hasSelection || (questionsPage === 1 && questionNavIndex === 0);
+  document.getElementById('questionPreviousBtn').disabled = !hasSelection || (questionsPage === 1 && questionNavIndex === 0);
+  document.getElementById('questionNextBtn').disabled = !hasSelection || (questionsPage === questionTotalPages && questionNavIndex === questionPageItems.length - 1);
+  document.getElementById('questionLastBtn').disabled = !hasSelection || (questionsPage === questionTotalPages && questionNavIndex === questionPageItems.length - 1);
+}
+
+async function navigateQuestion(direction) {
+  if (questionNavIndex < 0) return;
+  const form = document.getElementById('questionForm');
+  if (form.dataset.dirty === 'true' && !confirm('Discard unsaved changes and move to another question?')) return;
+
+  let targetPage = questionsPage;
+  let targetIndex = questionNavIndex;
+
+  if (direction === 'first') {
+    targetPage = 1;
+    targetIndex = 0;
+  } else if (direction === 'last') {
+    targetPage = questionTotalPages;
+    targetIndex = -1;
+  } else if (direction === 'previous') {
+    if (targetIndex > 0) targetIndex--;
+    else { targetPage--; targetIndex = -1; }
+  } else if (direction === 'next') {
+    if (targetIndex < questionPageItems.length - 1) targetIndex++;
+    else { targetPage++; targetIndex = 0; }
+  }
+
+  if (targetPage !== questionsPage) {
+    questionsPage = targetPage;
+    await renderQuestionTable();
+  }
+  if (targetIndex < 0) targetIndex = questionPageItems.length - 1;
+  const target = questionPageItems[targetIndex];
+  if (target) {
+    form.dataset.dirty = 'false';
+    await window.editQuestion(target.id);
+  }
+}
+
+document.getElementById('questionFirstBtn').addEventListener('click', () => navigateQuestion('first'));
+document.getElementById('questionPreviousBtn').addEventListener('click', () => navigateQuestion('previous'));
+document.getElementById('questionNextBtn').addEventListener('click', () => navigateQuestion('next'));
+document.getElementById('questionLastBtn').addEventListener('click', () => navigateQuestion('last'));
+
+document.getElementById('questionForm').addEventListener('input', (event) => {
+  if (document.getElementById('questionId').value && event.target.id !== 'questionId') {
+    event.currentTarget.dataset.dirty = 'true';
+  }
+});
+document.getElementById('questionForm').addEventListener('change', (event) => {
+  if (document.getElementById('questionId').value && event.target.id !== 'questionId') {
+    event.currentTarget.dataset.dirty = 'true';
+  }
+});
 
 document.getElementById('questionForm').addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -260,17 +326,28 @@ document.getElementById('questionForm').addEventListener('submit', async (e) => 
     alert(d.error || 'Error saving question');
     return;
   }
-  document.getElementById('questionForm').reset();
-  document.getElementById('questionId').value = '';
-  document.getElementById('currentAttachment').innerHTML = '';
+  const form = document.getElementById('questionForm');
+  form.dataset.dirty = 'false';
+  document.getElementById('attachment').value = '';
+  if (!id) {
+    form.reset();
+    document.getElementById('questionId').value = '';
+    document.getElementById('currentAttachment').innerHTML = '';
+  }
   await renderQuestionTable();
 });
 
 window.editQuestion = async (id) => {
+  const form = document.getElementById('questionForm');
+  const currentId = document.getElementById('questionId').value;
+  if (currentId && currentId !== String(id) && form.dataset.dirty === 'true' &&
+      !confirm('Discard unsaved changes and open another question?')) return;
   const res = await api(`/api/questions/${id}/raw`);
   if (!res.ok) { alert(res.data && res.data.error ? res.data.error : 'Could not open this question'); return; }
   const q = res.data;
+  form.dataset.dirty = 'false';
   document.getElementById('questionId').value = q.id;
+  questionNavIndex = questionPageItems.findIndex(item => item.id === q.id);
   document.getElementById('questionBookSelect').value = q.book_id;
   document.getElementById('question').value = q.question;
   q.options.forEach((opt, i) => {
@@ -280,6 +357,7 @@ window.editQuestion = async (id) => {
   document.getElementById('explanation').value = q.explanation;
   const box = document.getElementById('currentAttachment');
   box.innerHTML = q.attachment_url ? `Current file: <a href="${q.attachment_url}" target="_blank">view</a>` : '';
+  updateQuestionNavigationButtons();
   document.querySelector('.tab-btn[data-tab="questions"]').click();
 };
 

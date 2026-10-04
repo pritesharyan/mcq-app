@@ -7,6 +7,11 @@ header button { background: #e74c3c; color: white; border: none; padding: 6px 12
 .auth-card input, .auth-card button { width: 100%; padding: 10px; margin: 6px 0; box-sizing: border-box; }
 .hidden { display: none !important; }
 .row { margin: 10px 0; display: flex; flex-direction: column; gap: 4px; }
+.question-book-row { display: flex; align-items: flex-end; gap: 12px; margin: 10px 0; }
+.question-book-field { flex: 1 1 auto; min-width: 0; }
+.question-book-field select { width: 100%; }
+.question-editor-nav { display: flex; flex: 0 0 auto; gap: 6px; }
+.question-editor-nav button { padding: 8px 10px; white-space: nowrap; }
 select, input, textarea { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; font-family: inherit; }
 textarea { min-height: 60px; width: 100%; }
 button { cursor: pointer; padding: 8px 14px; border-radius: 4px; border: 1px solid #ccc; background: #3498db; color: white; }
@@ -134,6 +139,9 @@ form > button { margin-top: 12px; }
   .auth-card { margin-top: 24px; }
 
   .option-grid { grid-template-columns: 1fr; }
+  .question-book-row { flex-wrap: wrap; }
+  .question-book-field { flex-basis: 100%; }
+  .question-editor-nav { width: 100%; justify-content: flex-end; }
   .nav-row { flex-wrap: wrap; }
   .nav-row button { flex: 1 1 auto; min-width: 100px; }
 

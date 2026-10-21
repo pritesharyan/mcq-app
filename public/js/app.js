@@ -49,7 +49,7 @@ async function init() {
 }
 
 /* ======================================================================
-   LIVE CLOCK (India Standard Time) + TRIAL STATUS BANNER
+   LIVE CLOCK (India Standard Time) + ACCESS RESTRICTION BANNER
    ====================================================================== */
 function formatIST(date) {
   const dateStr = date.toLocaleDateString('en-GB', { timeZone: 'Asia/Kolkata', day: '2-digit', month: 'short', year: 'numeric' });
@@ -67,7 +67,7 @@ function applyTrialBanner(trial) {
   const banner = document.getElementById('trialBanner');
   if (!trial || !trial.restricted) { banner.classList.add('hidden'); return; }
   banner.classList.remove('hidden');
-  banner.textContent = `Your account is on a limited trial (${trial.used}/${trial.limit} practice questions used). My Test Results and Practice Log are unavailable until an admin upgrades your account.`;
+  banner.textContent = `Your account has restricted access (${trial.used}/${trial.limit} practice questions used). My Test Results and Practice Log are unavailable until an admin grants full access.`;
 }
 
 /* ======================================================================
@@ -247,7 +247,7 @@ function selectOption(chosen) {
     body: JSON.stringify({ question_id: q.id, chosen_option: chosen })
   }).then(res => {
     if (!res.ok && res.data && res.data.error) {
-      // Most likely the 50-question trial cap was hit - surface it plainly.
+      // Most likely the 50-question practice cap was hit - surface it plainly.
       document.getElementById('trialBanner').classList.remove('hidden');
       document.getElementById('trialBanner').textContent = res.data.error;
     }

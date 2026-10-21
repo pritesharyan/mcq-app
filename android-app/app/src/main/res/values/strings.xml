@@ -2,4 +2,9 @@
     <string name="app_name">HGP ITI</string>
     <!-- Replace this with the final HTTPS Render URL before building. -->
     <string name="web_app_url">https://highergradepayiti.duckdns.org/</string>
+    <!-- Replace both test values with the IDs from your AdMob account before release. -->
+    <!-- <string name="admob_app_id">ca-app-pub-3940256099942544~3347511713</string> -->
+    <string name="admob_app_id">ca-app-pub-3517074518191557~8565703889</string>
+    <!-- <string name="admob_banner_ad_unit_id">ca-app-pub-3940256099942544/6300978111</string> -->
+    <string name="admob_banner_ad_unit_id">ca-app-pub-3517074518191557/6871769251</string>
 </resources>

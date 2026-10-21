@@ -77,7 +77,8 @@ router.post('/', requireAdmin, async (req, res, next) => {
         mobile: mobile ? mobile.trim() : null,
         email: email.trim(),
         password: hash,
-        role: finalRole
+        role: finalRole,
+        unlimitedAccess: true
       }
     });
 
@@ -132,9 +133,8 @@ router.put('/:id/reset-password', requireAdmin, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-// Grant (or revoke) unlimited access, lifting the 24h/50-question trial cap for a "user"
-// account early. Any admin can do this - it's an access-control action like block/grant,
-// not a role change. Has no effect on admin/master_admin accounts (never trial-restricted).
+// Admins manually grant or restrict a user's full access. This is separate from
+// blocking login and does not change the user's role.
 router.put('/:id/unlimited-access', requireAdmin, async (req, res, next) => {
   try {
     const { unlimitedAccess } = req.body;

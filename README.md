@@ -75,7 +75,7 @@ Google Play; see `android-app/README.md` for the release steps.
 
 ## Database backups
 
-The server keeps consistent SQLite snapshots in the project-root `backups/` folder. It creates an automatic backup at startup when no automatic backup exists or the latest one is at least 24 hours old, then schedules the next backup 24 hours later. Master admins can create and download manual or automatic snapshots from Admin > Backups. Backup files stay on the same server, so download important copies to separate storage.
+The server keeps consistent SQLite snapshots in the project-root `backups/` folder. It creates an automatic backup at startup when no automatic backup exists or the latest one is at least 24 hours old, then schedules the next backup 24 hours later. Automatic backups older than five days are deleted; manual backups are kept until deleted by an admin. Master admins can create and download manual or automatic snapshots from Admin > Backups. Backup files stay on the same server, so download important copies to separate storage.
 
 ## About passwords — why they're hashed, not plaintext
 

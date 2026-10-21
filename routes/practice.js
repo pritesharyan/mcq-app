@@ -5,7 +5,7 @@ const { isTrialRestricted, TRIAL_PRACTICE_LIMIT } = require('../lib/trial');
 
 // POST /api/practice/attempt { question_id, chosen_option }
 // Records (upserts) that this user has practiced this question. Scored server-side.
-// For trial-restricted accounts, refuses NEW questions once TRIAL_PRACTICE_LIMIT distinct
+// For restricted accounts, refuses NEW questions once TRIAL_PRACTICE_LIMIT distinct
 // questions have been practiced - re-answering an already-practiced question is always fine.
 router.post('/attempt', requireAuth, async (req, res, next) => {
   try {
@@ -25,7 +25,7 @@ router.post('/attempt', requireAuth, async (req, res, next) => {
         const distinctCount = await prisma.practiceAttempt.count({ where: { userId: req.session.user.id } });
         if (distinctCount >= TRIAL_PRACTICE_LIMIT) {
           return res.status(403).json({
-            error: `You've reached the ${TRIAL_PRACTICE_LIMIT}-question practice limit for trial accounts. Ask an admin to upgrade your account for unlimited access.`,
+            error: `You've reached the ${TRIAL_PRACTICE_LIMIT}-question practice limit for restricted accounts. Ask an admin to grant full access.`,
             limitReached: true
           });
         }

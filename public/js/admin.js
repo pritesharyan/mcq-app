@@ -430,7 +430,7 @@ async function renderUserTable() {
       : escapeHtml(u.role);
     let trialCell = '—';
     if (u.role === 'user') {
-      trialCell = u.unlimitedAccess ? 'Unlimited' : (u.trialRestricted ? '<span class="status-pending">Restricted (50 Qs)</span>' : 'In 24h trial');
+      trialCell = u.unlimitedAccess ? 'Full access' : '<span class="status-pending">Restricted (50 Qs)</span>';
     }
     tr.innerHTML = `
       <td>${escapeHtml(u.name)}</td>
@@ -443,8 +443,8 @@ async function renderUserTable() {
       <td>${formatDate(u.createdAt)}</td>
       <td>
         ${u.role === 'master_admin' ? '' : `<button onclick="toggleBlock(${u.id}, ${!blocked})">${blocked ? 'Grant access' : 'Block'}</button>`}
-        ${u.role === 'user' && !u.unlimitedAccess ? `<button onclick="grantUnlimited(${u.id})">Grant unlimited</button>` : ''}
-        ${u.role === 'user' && u.unlimitedAccess ? `<button onclick="revokeUnlimited(${u.id})">Revoke unlimited</button>` : ''}
+        ${u.role === 'user' && !u.unlimitedAccess ? `<button onclick="grantUnlimited(${u.id})">Grant full access</button>` : ''}
+        ${u.role === 'user' && u.unlimitedAccess ? `<button onclick="revokeUnlimited(${u.id})">Restrict access</button>` : ''}
         <button onclick="openResetPassword(${u.id}, '${escapeHtml(u.username)}')">Reset password</button>
       </td>`;
     tbody.appendChild(tr);
@@ -467,7 +467,7 @@ window.grantUnlimited = async (id) => {
   await renderUserTable();
 };
 window.revokeUnlimited = async (id) => {
-  if (!confirm('Revoke unlimited access? They will go back to the 24h/50-question trial limits.')) return;
+  if (!confirm('Restrict this account? It will have a 50-question practice limit and no access to Practice Log or My Test Results.')) return;
   await api(`/api/users/${id}/unlimited-access`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ unlimitedAccess: false }) });
   await renderUserTable();
 };

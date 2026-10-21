@@ -19,8 +19,8 @@ model User {
   email          String   @unique // mandatory - used for forgot-username/password recovery
   password       String   // NOTE: temporary/reset passwords only, see auth routes. Not the user's original password.
   role           String   @default("user") // "user" | "admin" | "master_admin"
-  status         String   @default("active") // "active" | "blocked" (admin-controlled login block, separate from the trial cap below)
-  unlimitedAccess Boolean @default(false) // master/admin-granted: lifts the 24h trial cap on new "user" accounts (see auth/trial helper)
+  status         String   @default("active") // "active" | "blocked" (admin-controlled login block)
+  unlimitedAccess Boolean @default(true) // admins can manually restrict user accounts by setting this to false
   createdAt      DateTime @default(now())
 
   questions        Question[]           @relation("QuestionCreatedBy")
@@ -130,8 +130,8 @@ model UserSession {
 // One row per (user, question) ever answered in PRACTICE MCQ mode (not "Take a Test",
 // which is tracked separately via TestAttempt). Upserted on every practice answer, so a
 // row's mere existence means "this user has practiced this question at least once" -
-// which is exactly what both the Practice Log (progress per book) and the 24h trial's
-// 50-question cap need to count.
+// which is exactly what both the Practice Log (progress per book) and the restricted
+// accounts' 50-question cap need to count.
 model PracticeAttempt {
   id            Int      @id @default(autoincrement())
   userId        Int

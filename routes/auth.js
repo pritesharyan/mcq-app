@@ -37,7 +37,8 @@ router.post('/register', async (req, res, next) => {
         mobile: mobile ? mobile.trim() : null,
         email: email.trim(),
         password: hash,
-        role: 'user'
+        role: 'user',
+        unlimitedAccess: true
       }
     });
 

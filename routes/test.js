@@ -96,7 +96,7 @@ router.post('/submit', requireAuth, async (req, res, next) => {
 });
 
 // GET /api/test/attempts?page=1&pageSize=10 - the current user's own past test results.
-// Trial-restricted accounts (see lib/trial.js) don't get this feature until an admin lifts the cap.
+// Restricted accounts (see lib/trial.js) don't get this feature until an admin grants full access.
 router.get('/attempts', requireAuth, async (req, res, next) => {
   try {
     if (isTrialRestricted(req.user)) {

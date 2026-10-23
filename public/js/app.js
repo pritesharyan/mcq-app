@@ -175,6 +175,14 @@ function wirePracticeQuiz() {
   document.getElementById('startBtn').addEventListener('click', startQuiz);
   document.getElementById('prevBtn').addEventListener('click', () => go(-1));
   document.getElementById('nextBtn').addEventListener('click', () => go(1));
+  document.getElementById('questionJumpBtn').addEventListener('click', goToQuestion);
+  document.getElementById('questionJumpInput').addEventListener('keydown', event => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      goToQuestion();
+    }
+  });
+  document.getElementById('questionJumpInput').addEventListener('input', clearQuestionJumpError);
   document.getElementById('selectorsToggle').addEventListener('click', toggleSelectors);
   document.getElementById('hintBtn').addEventListener('click', toggleHint);
   document.getElementById('suggestToggleBtn').addEventListener('click', openSuggestForm);
@@ -199,6 +207,10 @@ async function startQuiz() {
   if (!questions || !questions.length) { alert('No questions found for this selection.'); return; }
 
   state = { questions, index: 0, answered: {} };
+  const questionJumpInput = document.getElementById('questionJumpInput');
+  questionJumpInput.value = '';
+  questionJumpInput.max = String(questions.length);
+  clearQuestionJumpError();
   document.getElementById('quiz').classList.remove('hidden');
   setSelectorsCollapsed(true);
   renderQuestion();
@@ -302,6 +314,30 @@ function go(dir) {
   if (newIndex < 0 || newIndex >= state.questions.length) return;
   state.index = newIndex;
   renderQuestion();
+}
+
+function goToQuestion() {
+  const input = document.getElementById('questionJumpInput');
+  const rawValue = input.value.trim();
+  const questionNumber = Number(rawValue);
+  if (!/^\d+$/.test(rawValue) || !Number.isSafeInteger(questionNumber) ||
+      questionNumber < 1 || questionNumber > state.questions.length) {
+    const error = document.getElementById('questionJumpError');
+    error.textContent = `Enter a whole number from 1 to ${state.questions.length}.`;
+    error.classList.remove('hidden');
+    return;
+  }
+
+  state.index = questionNumber - 1;
+  input.value = '';
+  clearQuestionJumpError();
+  renderQuestion();
+}
+
+function clearQuestionJumpError() {
+  const error = document.getElementById('questionJumpError');
+  error.textContent = '';
+  error.classList.add('hidden');
 }
 
 function openSuggestForm() {

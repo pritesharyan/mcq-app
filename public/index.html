@@ -60,7 +60,14 @@
     </section>
 
     <section id="quiz" class="card hidden">
-      <div id="progressBadge"></div>
+      <div class="quiz-progress-row">
+        <div class="question-jump-controls">
+          <input type="number" id="questionJumpInput" min="1" step="1" inputmode="numeric" aria-label="Question number" placeholder="Jump to Que.">
+          <button type="button" id="questionJumpBtn">Go</button>
+        </div>
+        <div id="progressBadge"></div>
+      </div>
+      <p id="questionJumpError" class="question-jump-error hidden" role="status" aria-live="polite"></p>
       <div class="practice-progress" role="progressbar" aria-label="Practice question progress" aria-valuemin="1" aria-valuemax="1" aria-valuenow="1"><span id="practiceProgressFill"></span></div>
       <div id="qText" class="question-text"></div>
       <div id="options"></div>

@@ -116,6 +116,9 @@ by `//` display and export the English text when present, otherwise Gujarati.
 Excel imports accept both the current single-column template and older
 bilingual templates.
 
+Practice quizzes display questions in ascending database ID order, matching
+the order in which questions were added. Timed tests remain randomized.
+
 ## New in this update
 
 - **User-submitted corrections, visible to the submitter.** During a quiz,

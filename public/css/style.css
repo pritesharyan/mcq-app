@@ -53,8 +53,13 @@ form > button { margin-top: 12px; }
 .toggle-btn { background: #eee; color: #333; border: 1px solid #ccc; font-size: 13px; padding: 6px 10px; }
 
 /* Top-right question counter badge on the quiz card */
-#quiz { position: relative; padding-top: 40px; }
-#progressBadge { position: absolute; top: 16px; right: 20px; font-weight: 600; color: #555; background: #ecf0f1; padding: 4px 10px; border-radius: 12px; font-size: 14px; }
+#quiz { position: relative; padding-top: 0; }
+.quiz-progress-row { display: flex; justify-content: flex-end; align-items: center; gap: 8px; min-height: 40px; }
+.question-jump-controls { display: flex; align-items: center; gap: 4px; }
+#questionJumpInput { width: 112px; min-height: 38px; flex: 0 0 112px; padding: 6px; text-align: center; }
+#questionJumpBtn { min-width: 44px; min-height: 38px; padding: 6px 10px; }
+#progressBadge { font-weight: 600; color: #555; background: #ecf0f1; padding: 4px 10px; border-radius: 12px; font-size: 14px; white-space: nowrap; }
+.question-jump-error { color: #e74c3c; font-size: 12px; margin: 0 0 8px; text-align: right; }
 
 /* Hint button */
 .hint-btn { background: #f1c40f; color: #4a3b00; border: 1px solid #d4ac0d; margin: 10px 0; font-weight: 600; }
@@ -172,5 +177,7 @@ form > button { margin-top: 12px; }
   .modal-box { width: 100%; }
 
   #progressBadge { font-size: 12px; padding: 3px 8px; }
+  #questionJumpInput { width: 112px; min-height: 40px; flex-basis: 112px; }
+  #questionJumpBtn { min-width: 44px; min-height: 40px; }
   .question-text { font-size: 16px; }
 }

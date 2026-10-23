@@ -50,15 +50,6 @@ function displayField(stored) {
   return { text: singleLanguage(stored) };
 }
 
-function shuffle(arr) {
-  const a = arr.slice();
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
-
 function toDisplayQuestion(r) {
   return {
     id: r.id,
@@ -116,10 +107,8 @@ router.get('/', requireAuth, async (req, res, next) => {
       });
     }
 
-    // Practice-quiz endpoint (not the admin table): shuffle question order every time,
-    // so the same selection doesn't always start with the same question.
     const rows = await prisma.question.findMany({ where, include: { book: true }, orderBy: { id: 'asc' } });
-    res.json(shuffle(rows).map(r => toDisplayQuestion(r)));
+    res.json(rows.map(r => toDisplayQuestion(r)));
   } catch (err) { next(err); }
 });
 

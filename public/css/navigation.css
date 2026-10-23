@@ -21,9 +21,11 @@
     position: relative;
     z-index: 1202;
     min-height: 64px;
+    min-height: calc(64px + env(safe-area-inset-top));
     flex-wrap: nowrap;
     gap: 8px;
     padding: 10px 14px;
+    padding: calc(10px + env(safe-area-inset-top)) 14px 10px;
   }
   .app-header h1 { min-width: 0; margin: 0; font-size: 16px; line-height: 1.2; }
   .app-header .app-brand { gap: 8px; }
@@ -40,12 +42,12 @@
     position: fixed;
     z-index: 1201;
     top: 64px;
+    top: calc(64px + env(safe-area-inset-top));
     bottom: 0;
     left: 0;
     display: flex;
     width: min(340px, 88vw);
     max-width: none;
-    height: calc(100dvh - 64px);
     margin: 0;
     padding: 16px 14px calc(18px + env(safe-area-inset-bottom));
     flex-direction: column;
@@ -75,9 +77,9 @@
     position: fixed;
     z-index: 1200;
     inset: 64px 0 0;
+    inset: calc(64px + env(safe-area-inset-top)) 0 0;
     display: block;
     width: 100%;
-    height: calc(100dvh - 64px);
     padding: 0;
     border: 0;
     border-radius: 0;

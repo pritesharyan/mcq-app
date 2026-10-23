@@ -21,6 +21,7 @@ body.login-page {
 .auth-header {
   min-height: 76px;
   padding: 12px max(24px, calc((100vw - 1100px) / 2));
+  padding: calc(12px + env(safe-area-inset-top)) max(24px, calc((100vw - 1100px) / 2)) 12px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -67,7 +68,7 @@ body.login-page {
 .auth-footer a { text-decoration: none; }
 
 @media (max-width: 520px) {
-  .auth-header { min-height: 66px; padding: 10px 16px; }
+  .auth-header { min-height: 66px; min-height: calc(66px + env(safe-area-inset-top)); padding: 10px 16px; padding: calc(10px + env(safe-area-inset-top)) 16px 10px; }
   .auth-brand img { width: 36px; height: 36px; flex-basis: 36px; }
   .auth-brand strong { font-size: 13px; }
   .home-link { font-size: 12px; }

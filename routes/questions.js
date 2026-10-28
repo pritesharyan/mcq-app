@@ -5,6 +5,7 @@ const crypto = require('crypto');
 const XLSX = require('xlsx');
 const prisma = require('../lib/prisma');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
+const { toDisplayQuestions } = require('../lib/display-question');
 
 const importUpload = multer({
   storage: multer.memoryStorage(),
@@ -46,25 +47,6 @@ function singleLanguage(value) {
   return english.trim() || gujarati.join('//').trim();
 }
 
-function displayField(stored) {
-  return { text: singleLanguage(stored) };
-}
-
-function toDisplayQuestion(r) {
-  return {
-    id: r.id,
-    book_id: r.bookId,
-    book_name: r.book ? r.book.name : undefined,
-    created_by: r.createdById,
-    question: displayField(r.questionText),
-    options: [r.option1, r.option2, r.option3, r.option4].map(displayField),
-    correct_option: r.correctOption,
-    explanation: displayField(r.explanation),
-    attachment_url: r.attachmentPath ? `/uploads/${path.basename(r.attachmentPath)}` : null,
-    attachment_type: r.attachmentType
-  };
-}
-
 // GET /api/questions?book_id=&book_ids=1,2,3
 //    &scope=mine (admin management view: regular admins see only their own; master admin always sees all)
 //    &paginate=true&page=1&pageSize=10 (admin table pagination; quiz-taking omits this and gets a plain array)
@@ -99,7 +81,7 @@ router.get('/', requireAuth, async (req, res, next) => {
         })
       ]);
       return res.json({
-        items: rows.map(r => toDisplayQuestion(r)),
+        items: await toDisplayQuestions(rows, req.session.user.id),
         total,
         page: pageNum,
         pageSize: size,
@@ -108,7 +90,7 @@ router.get('/', requireAuth, async (req, res, next) => {
     }
 
     const rows = await prisma.question.findMany({ where, include: { book: true }, orderBy: { id: 'asc' } });
-    res.json(rows.map(r => toDisplayQuestion(r)));
+    res.json(await toDisplayQuestions(rows, req.session.user.id));
   } catch (err) { next(err); }
 });
 

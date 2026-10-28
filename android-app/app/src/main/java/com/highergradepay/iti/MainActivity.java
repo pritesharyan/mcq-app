@@ -12,7 +12,9 @@ import android.view.Gravity;
 import android.view.ViewGroup;
 import android.webkit.CookieManager;
 import android.webkit.DownloadListener;
+import android.webkit.JavascriptInterface;
 import android.webkit.JsResult;
+import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebChromeClient;
@@ -42,6 +44,8 @@ public class MainActivity extends Activity {
     private ConsentInformation consentInformation;
     private boolean adsInitialized;
     private Uri appUri;
+    private String lastMainFrameUrl;
+    private boolean offlineShowing;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -49,8 +53,15 @@ public class MainActivity extends Activity {
 
         String startUrl = getString(com.highergradepay.iti.R.string.web_app_url);
         appUri = Uri.parse(startUrl);
+        lastMainFrameUrl = startUrl;
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
+        int baseBottomPadding = root.getPaddingBottom();
+        root.setOnApplyWindowInsetsListener((view, insets) -> {
+            view.setPadding(view.getPaddingLeft(), view.getPaddingTop(), view.getPaddingRight(),
+                    baseBottomPadding + insets.getSystemWindowInsetBottom());
+            return insets;
+        });
 
         webView = new WebView(this);
         root.addView(webView, new LinearLayout.LayoutParams(
@@ -93,6 +104,12 @@ public class MainActivity extends Activity {
 
         webView.setWebViewClient(new WebViewClient() {
             @Override
+            public void onPageStarted(WebView view, String url, android.graphics.Bitmap favicon) {
+                super.onPageStarted(view, url, favicon);
+                if (!offlineShowing) lastMainFrameUrl = url;
+            }
+
+            @Override
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 return openUrl(request.getUrl());
             }
@@ -101,7 +118,27 @@ public class MainActivity extends Activity {
             public boolean shouldOverrideUrlLoading(WebView view, String url) {
                 return openUrl(Uri.parse(url));
             }
+
+            @Override
+            public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
+                super.onReceivedError(view, request, error);
+                if (!request.isForMainFrame()) return;
+                lastMainFrameUrl = request.getUrl().toString();
+                Log.w(TAG, "Main page load failed: " + error.getDescription());
+                showOfflinePage(view);
+            }
+
+            @Override
+            public void onReceivedHttpError(WebView view, WebResourceRequest request,
+                                            android.webkit.WebResourceResponse response) {
+                super.onReceivedHttpError(view, request, response);
+                if (!request.isForMainFrame() || response.getStatusCode() < 500) return;
+                lastMainFrameUrl = request.getUrl().toString();
+                Log.w(TAG, "Main page returned HTTP " + response.getStatusCode());
+                showOfflinePage(view);
+            }
         });
+        webView.addJavascriptInterface(new OfflinePageBridge(), "OfflinePage");
         webView.setWebChromeClient(new WebChromeClient() {
             @Override
             public boolean onJsAlert(WebView view, String url, String message, JsResult result) {
@@ -130,6 +167,41 @@ public class MainActivity extends Activity {
         webView.loadUrl(startUrl);
 
         requestAdConsent();
+    }
+
+    private void showOfflinePage(WebView view) {
+        if (offlineShowing || isFinishing() || isDestroyed()) return;
+        offlineShowing = true;
+        String html = "<!doctype html><html><head><meta charset=\"utf-8\">"
+                + "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1, viewport-fit=cover\">"
+                + "<style>"
+                + "*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;"
+                + "padding:max(24px,env(safe-area-inset-top)) 24px max(24px,env(safe-area-inset-bottom));"
+                + "font-family:Arial,sans-serif;color:#263b48;background:linear-gradient(145deg,#edf7f8,#f8f6ed)}"
+                + "main{width:min(100%,420px);padding:36px 28px;text-align:center;background:#fff;"
+                + "border:1px solid #dce8e9;border-radius:18px;box-shadow:0 16px 48px #243d4a1c}"
+                + ".icon{width:64px;height:64px;margin:0 auto 20px;display:grid;place-items:center;"
+                + "border-radius:50%;background:#e7f4f5;color:#247a9d;font-size:30px}"
+                + "h1{margin:0 0 12px;font-size:24px}p{margin:0;color:#61727b;line-height:1.6}"
+                + "button{margin-top:24px;padding:12px 26px;border:0;border-radius:8px;background:#247a9d;"
+                + "color:#fff;font-size:16px;font-weight:700}"
+                + "</style></head><body><main><div class=\"icon\" aria-hidden=\"true\">⌁</div>"
+                + "<h1>No Internet Connection</h1>"
+                + "<p>Please check your network settings and try again.</p>"
+                + "<button type=\"button\" onclick=\"OfflinePage.retry()\">Retry</button>"
+                + "</main></body></html>";
+        view.loadDataWithBaseURL(null, html, "text/html", "UTF-8", null);
+    }
+
+    private final class OfflinePageBridge {
+        @JavascriptInterface
+        public void retry() {
+            runOnUiThread(() -> {
+                if (webView == null || isFinishing() || isDestroyed()) return;
+                offlineShowing = false;
+                webView.loadUrl(lastMainFrameUrl);
+            });
+        }
     }
 
     private void requestAdConsent() {

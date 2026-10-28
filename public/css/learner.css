@@ -114,6 +114,11 @@ body.learner-app {
 .practice-progress span, .test-progress span { display: block; width: 0; height: 100%; border-radius: inherit; background: #48a9c3; transition: width .3s ease; }
 .learner-app #progressBadge { background: #fff0bd; color: #6f5410; border-radius: 5px; }
 .learner-app .hint-btn { background: #f0ce62; color: #59420d; border-color: #e4bc3e; }
+.learner-app .star-question-btn { border: 1px solid #d8e2e5; background: #f3f7f8; color: #5b707b; }
+.learner-app .star-question-btn.is-starred { border-color: #e4bc3e; background: #fff0bd; color: #8a6411; }
+.learner-app .practice-log-reset-btn { background: #c65346; }
+.learner-app .starred-paper-group > h4 { background: #e8f3f6; border-left-color: #247a9d; }
+.learner-app .starred-options .starred-correct-option { color: #4d8b32; }
 .learner-app #explanationBox, .learner-app #attachmentBox { border-left: 3px solid #e9c458; border-radius: 0 6px 6px 0; background: #fff9e9; }
 .learner-app .test-layout { align-items: stretch; gap: 16px; }
 .learner-app .test-main { border-top: 4px solid #e9785e; }

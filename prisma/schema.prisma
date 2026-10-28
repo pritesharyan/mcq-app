@@ -29,6 +29,7 @@ model User {
   testAttempts     TestAttempt[]
   sessions         UserSession[]
   practiceAttempts PracticeAttempt[]
+  starredQuestions StarredQuestion[]
 }
 
 model Paper {
@@ -73,6 +74,18 @@ model Question {
 
   suggestions      QuestionSuggestion[]
   practiceAttempts PracticeAttempt[]
+  starredBy        StarredQuestion[]
+}
+
+model StarredQuestion {
+  userId     Int
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  questionId Int
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@id([userId, questionId])
+  @@index([questionId])
 }
 
 model QuestionSuggestion {

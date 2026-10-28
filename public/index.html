@@ -32,6 +32,7 @@
     <button class="tab-btn" data-tab="test">Take a Test</button>
     <button class="tab-btn" data-tab="testhistory">My Test Results</button>
     <button class="tab-btn" data-tab="practicelog">Practice Log</button>
+    <button class="tab-btn" data-tab="starred">Starred Questions</button>
     <button class="tab-btn" data-tab="materials">Exam Materials</button>
     <button class="tab-btn" data-tab="mysuggestions">My Suggestions</button>
     <button class="tab-btn" data-tab="account">Change Password</button>
@@ -61,17 +62,20 @@
 
     <section id="quiz" class="card hidden">
       <div class="quiz-progress-row">
-        <div class="question-jump-controls">
-          <input type="number" id="questionJumpInput" min="1" step="1" inputmode="numeric" aria-label="Question number" placeholder="Jump to Que.">
-          <button type="button" id="questionJumpBtn">Go</button>
-        </div>
         <div id="progressBadge"></div>
       </div>
-      <p id="questionJumpError" class="question-jump-error hidden" role="status" aria-live="polite"></p>
       <div class="practice-progress" role="progressbar" aria-label="Practice question progress" aria-valuemin="1" aria-valuemax="1" aria-valuenow="1"><span id="practiceProgressFill"></span></div>
       <div id="qText" class="question-text"></div>
       <div id="options"></div>
-      <button type="button" id="hintBtn" class="hint-btn">💡 Hint</button>
+      <div class="question-actions-row">
+        <button type="button" id="hintBtn" class="hint-btn">💡 Hint</button>
+        <button type="button" id="starQuestionBtn" class="star-question-btn" aria-label="Star question" title="Star question" aria-pressed="false">☆</button>
+        <div class="question-jump-controls">
+          <input type="number" id="questionJumpInput" min="1" step="1" inputmode="numeric" aria-label="Question number" placeholder="Jump to Que.">
+          <button type="button" id="questionJumpBtn">Go</button>
+          <p id="questionJumpError" class="question-jump-error hidden" role="status" aria-live="polite"></p>
+        </div>
+      </div>
       <div id="attachmentBox" class="hidden"><h4>Reference</h4><div id="attachmentContent"></div></div>
       <div id="explanationBox" class="hidden"><h4>Explanation</h4><div id="explanationText"></div></div>
 
@@ -92,6 +96,14 @@
         <button id="nextBtn">Next</button>
       </div>
     </section>
+  </section>
+
+  <!-- ===================== STARRED QUESTIONS ===================== -->
+  <section id="tab-starred" class="tab-content hidden card">
+    <h3>Starred Questions</h3>
+    <p>Questions you have bookmarked while practicing.</p>
+    <button type="button" id="startStarredPracticeBtn">Practice Starred Questions</button>
+    <div id="starredQuestionsList" class="starred-questions-list" aria-live="polite"></div>
   </section>
 
   <!-- ===================== TAKE A TEST ===================== -->
@@ -199,11 +211,13 @@
     <h3>Practice Log</h3>
     <p style="font-size:13px;color:#888">How many of each book's questions you've practiced at least once. Re-practicing a question doesn't add to the count again.</p>
     <div id="practiceLogLocked" class="hidden"></div>
-    <table id="practiceLogTable">
-      <thead><tr><th>Sr. No</th><th>Paper</th><th>Book</th><th>Total Questions</th><th>Attended</th><th>Percentage</th></tr></thead>
-      <tbody></tbody>
-      <tfoot></tfoot>
-    </table>
+    <div class="table-scroll">
+      <table id="practiceLogTable">
+        <thead><tr><th>Sr. No</th><th>Paper</th><th>Book</th><th>Total Questions</th><th>Attended</th><th>Percentage</th><th>Action</th></tr></thead>
+        <tbody></tbody>
+        <tfoot></tfoot>
+      </table>
+    </div>
   </section>
 
   <!-- ===================== CHANGE PASSWORD ===================== -->

@@ -16,6 +16,11 @@ Edit `app/src/main/res/values/strings.xml` and replace the placeholder with the 
 
 The app requires an HTTPS deployment URL. External websites, email links, telephone links, and material downloads open in the appropriate Android app; pages hosted on the configured Render domain stay inside the WebView. Android back navigates WebView history before closing the app.
 
+Main-page network failures show a local offline screen with a Retry action rather
+than the default WebView error page. The Android layout also applies the system
+navigation-bar inset below the WebView and banner so bottom content stays
+visible.
+
 ## AdMob banner ads
 
 The Android app shows one native adaptive banner below the WebView, without

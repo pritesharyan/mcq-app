@@ -2,6 +2,7 @@ const router = require('express').Router();
 const prisma = require('../lib/prisma');
 const { requireAuth } = require('../middleware/auth');
 const { isTrialRestricted, TRIAL_PRACTICE_LIMIT } = require('../lib/trial');
+const { toDisplayQuestions } = require('../lib/display-question');
 
 // POST /api/practice/attempt { question_id, chosen_option }
 // Records (upserts) that this user has practiced this question. Scored server-side.
@@ -43,6 +44,49 @@ router.post('/attempt', requireAuth, async (req, res, next) => {
     });
 
     res.json({ ok: true, is_correct: isCorrect, correct_option: question.correctOption });
+  } catch (err) { next(err); }
+});
+
+router.put('/star', requireAuth, async (req, res, next) => {
+  try {
+    const questionId = Number.parseInt(req.body.question_id, 10);
+    const starred = req.body.starred;
+    if (!Number.isSafeInteger(questionId) || questionId < 1 || typeof starred !== 'boolean') {
+      return res.status(400).json({ error: 'A valid question_id and starred value are required' });
+    }
+
+    const question = await prisma.question.findUnique({ where: { id: questionId } });
+    if (!question) return res.status(404).json({ error: 'Question not found' });
+
+    const userId = req.session.user.id;
+    if (starred) {
+      await prisma.starredQuestion.upsert({
+        where: { userId_questionId: { userId, questionId } },
+        update: {},
+        create: { userId, questionId }
+      });
+    } else {
+      await prisma.starredQuestion.deleteMany({ where: { userId, questionId } });
+    }
+
+    res.json({ ok: true, is_starred: starred });
+  } catch (err) { next(err); }
+});
+
+router.get('/starred', requireAuth, async (req, res, next) => {
+  try {
+    const favorites = await prisma.starredQuestion.findMany({
+      where: { userId: req.session.user.id },
+      include: {
+        question: {
+          include: {
+            book: { include: { papers: { include: { paper: true } } } }
+          }
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+    res.json(await toDisplayQuestions(favorites.map(item => item.question), req.session.user.id));
   } catch (err) { next(err); }
 });
 
@@ -88,10 +132,10 @@ router.get('/log', requireAuth, async (req, res, next) => {
       const papers = paperIdsByBook.get(book.id) || [];
 
       if (papers.length === 0) {
-        rows.push({ paper_name: '', book_name: book.name, total_questions: total, attended_questions: attended, percentage, last_practiced_at: lastPracticedAt });
+        rows.push({ paper_id: null, book_id: book.id, paper_name: '', book_name: book.name, total_questions: total, attended_questions: attended, percentage, last_practiced_at: lastPracticedAt });
       } else {
         papers.forEach(p => {
-          rows.push({ paper_name: p.name, book_name: book.name, total_questions: total, attended_questions: attended, percentage, last_practiced_at: lastPracticedAt });
+          rows.push({ paper_id: p.id, book_id: book.id, paper_name: p.name, book_name: book.name, total_questions: total, attended_questions: attended, percentage, last_practiced_at: lastPracticedAt });
         });
       }
     });
@@ -109,6 +153,35 @@ router.get('/log', requireAuth, async (req, res, next) => {
       items: rows.map((r, i) => ({ sr_no: i + 1, ...r })),
       totals: { ...totals, percentage: overallPercentage }
     });
+  } catch (err) { next(err); }
+});
+
+router.post('/log/reset', requireAuth, async (req, res, next) => {
+  try {
+    if (isTrialRestricted(req.user)) {
+      return res.status(403).json({ error: 'Practice Log is available once your account is upgraded by an admin.' });
+    }
+
+    const paperId = req.body.paper_id == null ? null : Number.parseInt(req.body.paper_id, 10);
+    const bookId = Number.parseInt(req.body.book_id, 10);
+    if ((paperId !== null && (!Number.isSafeInteger(paperId) || paperId < 1)) ||
+        !Number.isSafeInteger(bookId) || bookId < 1) {
+      return res.status(400).json({ error: 'A valid book_id and optional paper_id are required' });
+    }
+
+    const book = await prisma.book.findUnique({ where: { id: bookId } });
+    if (!book) return res.status(404).json({ error: 'Book not found' });
+    if (paperId !== null) {
+      const paperBook = await prisma.paperBook.findUnique({
+        where: { paperId_bookId: { paperId, bookId } }
+      });
+      if (!paperBook) return res.status(404).json({ error: 'Paper and book combination not found' });
+    }
+
+    const result = await prisma.practiceAttempt.deleteMany({
+      where: { userId: req.session.user.id, bookId }
+    });
+    res.json({ ok: true, deleted_count: result.count });
   } catch (err) { next(err); }
 });
 

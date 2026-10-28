@@ -17,6 +17,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     if (btn.dataset.tab === 'mysuggestions') { mySuggestionsPage = 1; loadMySuggestions(); }
     if (btn.dataset.tab === 'testhistory') { testHistoryPage = 1; loadTestHistory(); }
     if (btn.dataset.tab === 'practicelog') loadPracticeLog();
+    if (btn.dataset.tab === 'starred') loadStarredQuestions();
   });
 });
 
@@ -36,6 +37,7 @@ async function init() {
   });
 
   wirePracticeQuiz();
+  wireStarredQuestions();
   wireTestMode();
   wireChangePassword();
   wireProfile();
@@ -185,6 +187,7 @@ function wirePracticeQuiz() {
   document.getElementById('questionJumpInput').addEventListener('input', clearQuestionJumpError);
   document.getElementById('selectorsToggle').addEventListener('click', toggleSelectors);
   document.getElementById('hintBtn').addEventListener('click', toggleHint);
+  document.getElementById('starQuestionBtn').addEventListener('click', toggleQuestionStar);
   document.getElementById('suggestToggleBtn').addEventListener('click', openSuggestForm);
   document.getElementById('suggestCancelBtn').addEventListener('click', closeSuggestForm);
   document.getElementById('suggestSubmitBtn').addEventListener('click', submitSuggestion);
@@ -206,6 +209,10 @@ async function startQuiz() {
   const questions = res.data;
   if (!questions || !questions.length) { alert('No questions found for this selection.'); return; }
 
+  beginQuiz(questions);
+}
+
+function beginQuiz(questions) {
   state = { questions, index: 0, answered: {} };
   const questionJumpInput = document.getElementById('questionJumpInput');
   questionJumpInput.value = '';
@@ -240,10 +247,119 @@ function renderQuestion() {
   document.getElementById('explanationBox').classList.add('hidden');
   document.getElementById('attachmentBox').classList.add('hidden');
   document.getElementById('hintBtn').textContent = '💡 Hint';
+  updateQuestionStarButton(q);
   closeSuggestForm();
 
   const prevAnswer = state.answered[q.id];
   if (prevAnswer) showResult(q, prevAnswer);
+}
+
+function updateQuestionStarButton(question) {
+  const button = document.getElementById('starQuestionBtn');
+  const starred = Boolean(question.is_starred);
+  button.textContent = starred ? '★' : '☆';
+  button.classList.toggle('is-starred', starred);
+  button.setAttribute('aria-pressed', String(starred));
+  button.setAttribute('aria-label', starred ? 'Unstar question' : 'Star question');
+  button.title = starred ? 'Unstar question' : 'Star question';
+}
+
+async function toggleQuestionStar() {
+  const question = state.questions[state.index];
+  if (!question) return;
+  const starred = !question.is_starred;
+  const res = await api('/api/practice/star', {
+    method: 'PUT', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ question_id: question.id, starred })
+  });
+  if (!res || !res.ok) {
+    alert((res && res.data && res.data.error) || 'Could not update starred question.');
+    return;
+  }
+  question.is_starred = res.data.is_starred;
+  updateQuestionStarButton(question);
+}
+
+function wireStarredQuestions() {
+  document.getElementById('startStarredPracticeBtn').addEventListener('click', startStarredPractice);
+  document.getElementById('starredQuestionsList').addEventListener('click', async event => {
+    const button = event.target.closest('[data-unstar-question]');
+    if (!button) return;
+    const res = await api('/api/practice/star', {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question_id: Number(button.dataset.unstarQuestion), starred: false })
+    });
+    if (!res || !res.ok) {
+      alert((res && res.data && res.data.error) || 'Could not remove starred question.');
+      return;
+    }
+    await loadStarredQuestions();
+  });
+}
+
+async function loadStarredQuestions() {
+  const list = document.getElementById('starredQuestionsList');
+  const res = await api('/api/practice/starred');
+  if (!res || !res.ok) {
+    list.textContent = (res && res.data && res.data.error) || 'Could not load starred questions.';
+    return;
+  }
+  if (!res.data.length) {
+    list.innerHTML = '<p class="hint-text">You have not starred any questions yet.</p>';
+    return;
+  }
+  const grouped = new Map();
+  res.data.forEach(question => {
+    const papers = question.paper_names && question.paper_names.length ? question.paper_names : ['No Paper'];
+    papers.forEach(paperName => {
+      if (!grouped.has(paperName)) grouped.set(paperName, new Map());
+      const books = grouped.get(paperName);
+      const bookName = question.book_name || 'Unknown Book';
+      if (!books.has(bookName)) books.set(bookName, []);
+      books.get(bookName).push(question);
+    });
+  });
+
+  list.innerHTML = Array.from(grouped, ([paperName, books]) => `
+    <section class="starred-paper-group">
+      <h4>${escapeHtml(paperName)}</h4>
+      ${Array.from(books, ([bookName, questions]) => `
+        <section class="starred-book-group">
+          <h5>${escapeHtml(bookName)}</h5>
+          ${questions.map(question => `
+            <article class="starred-question-card">
+              <div class="starred-question-heading">
+                <p>${escapeHtml(question.question.text)}</p>
+                <button type="button" class="secondary-btn" data-unstar-question="${question.id}">Remove Star</button>
+              </div>
+              <ol class="starred-options">
+                ${question.options.map((option, index) => `
+                  <li class="${index + 1 === question.correct_option ? 'starred-correct-option' : ''}">
+                    <span>${String.fromCharCode(65 + index)}.</span> ${escapeHtml(option.text)}
+                  </li>
+                `).join('')}
+              </ol>
+            </article>
+          `).join('')}
+        </section>
+      `).join('')}
+    </section>
+  `).join('');
+}
+
+async function startStarredPractice() {
+  const res = await api('/api/practice/starred');
+  if (!res || !res.ok) {
+    alert((res && res.data && res.data.error) || 'Could not load starred questions.');
+    return;
+  }
+  if (!res.data.length) {
+    alert('You have not starred any questions yet.');
+    return;
+  }
+  document.querySelector('.tab-btn[data-tab="practice"]').click();
+  document.getElementById('quiz').classList.remove('hidden');
+  beginQuiz(res.data);
 }
 
 // Selecting an option instantly grades it - no separate "check answer" step.
@@ -768,15 +884,30 @@ async function loadPracticeLog() {
       <td>${row.total_questions}</td>
       <td>${row.attended_questions}</td>
       <td>${row.percentage}%</td>
+      <td><button type="button" class="practice-log-reset-btn" data-paper-id="${row.paper_id == null ? '' : row.paper_id}" data-book-id="${row.book_id}">Reset</button></td>
     `;
+    tr.querySelector('.practice-log-reset-btn').addEventListener('click', () => resetPracticeLogRow(row));
     tbody.appendChild(tr);
   });
 
   const t = res.data.totals || { total_questions: 0, attended_questions: 0, percentage: 0 };
   const totalRow = document.createElement('tr');
   totalRow.className = 'practice-log-total-row';
-  totalRow.innerHTML = `<td colspan="3"><strong>Total</strong></td><td><strong>${t.total_questions}</strong></td><td><strong>${t.attended_questions}</strong></td><td><strong>${t.percentage}%</strong></td>`;
+  totalRow.innerHTML = `<td colspan="3"><strong>Total</strong></td><td><strong>${t.total_questions}</strong></td><td><strong>${t.attended_questions}</strong></td><td><strong>${t.percentage}%</strong></td><td></td>`;
   tfoot.appendChild(totalRow);
+}
+
+async function resetPracticeLogRow(row) {
+  if (!confirm(`Reset practice progress for ${row.book_name}? Progress is shared across all papers linked to this book.`)) return;
+  const res = await api('/api/practice/log/reset', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ paper_id: row.paper_id, book_id: row.book_id })
+  });
+  if (!res || !res.ok) {
+    alert((res && res.data && res.data.error) || 'Could not reset practice progress.');
+    return;
+  }
+  await loadPracticeLog();
 }
 
 function escapeHtml(s) {

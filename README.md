@@ -34,6 +34,9 @@ Open `http://localhost:3000`.
   database) that creates `data.db` and all its tables from
   `prisma/schema.prisma`. Run it again with a new `--name` any time you edit
   the schema yourself later.
+- When applying checked-in migrations to an existing local database, run
+  `npx prisma migrate dev`. Render applies pending migrations during deploy
+  with `npm run migrate:deploy`.
 - **Initial master admin:** username `admin`, with the password from
   `INITIAL_ADMIN_PASSWORD` — seeded only the very first time the server starts
   against an empty database. Production requires this variable and a password
@@ -160,6 +163,12 @@ the order in which questions were added. Timed tests remain randomized.
   added under Admin > Exam Materials — Sr. No, Paper Name, Book/Material
   Name, and a Download link — for users to browse and download reference
   PDFs.
+- **Starred Questions and progress reset.** Users can star practice questions,
+  review and practice them from the Starred Questions tab, and reset a book's
+  Practice Log progress. The log table scrolls horizontally on narrow screens.
+- **Safer mobile layout and Android offline handling.** Bottom safe-area
+  padding keeps page content clear of navigation bars, and the Android WebView
+  shows a local retry screen when the main page cannot load.
 
 ## Moving to Postgres later
 
@@ -184,6 +193,7 @@ Chapter            (id, name, bookId)
 Question           (id, chapterId, questionText, option1..4, correctOption,
                     explanation, attachmentPath, attachmentType, createdById)
 QuestionSuggestion (id, questionId, userId, suggestionText, status, adminNote, createdAt)
+StarredQuestion    (userId, questionId, createdAt)
 ExamMaterial       (id, paperId, materialName, downloadLink, addedById, createdAt)
 ```
 

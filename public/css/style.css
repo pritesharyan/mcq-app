@@ -203,10 +203,12 @@ form > button { margin-top: 12px; }
   #progressBadge { font-size: 12px; padding: 3px 8px; }
   #questionJumpInput { width: 112px; min-height: 40px; flex-basis: 112px; }
   #questionJumpBtn { min-width: 44px; min-height: 40px; }
-  #questionJumpInput { width: 88px; flex-basis: 88px; padding: 6px 3px; font-size: 12px; }
-  .question-actions-row { display: flex; flex-wrap: wrap; gap: 5px; }
-  .question-actions-row .question-jump-controls { margin-left: auto; }
+  #questionJumpInput { width: auto; min-width: 0; max-width: 112px; flex: 1 1 88px; padding: 6px 3px; font-size: 12px; }
+  #questionJumpBtn { flex: 0 0 44px; }
+  .question-actions-row { display: grid; grid-template-columns: minmax(0, 1fr) 40px minmax(0, 1fr); gap: 6px; }
   .question-actions-row .hint-btn { padding: 8px; font-size: 13px; }
+  .question-actions-row .star-question-btn { justify-self: center; }
+  .question-actions-row .question-jump-controls { width: 100%; min-width: 0; justify-self: end; gap: 4px; }
   .starred-question-heading { align-items: flex-start; }
   .starred-question-heading button { margin-left: auto; }
   .question-text { font-size: 16px; }
